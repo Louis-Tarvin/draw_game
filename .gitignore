@@ -1,0 +1,10 @@
+# Unwanted files
+/server/target/
+/server/Cargo.lock
+
+# Backup files
+*.rs.bk
+.DS_Store
+thumbs.db
+*~
+*.swp

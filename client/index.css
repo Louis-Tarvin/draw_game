@@ -1,0 +1,41 @@
+.main {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.manage-room {
+    margin: 10px;
+}
+.ui-wrapper {
+    display: flex;
+    flex-direction: row;
+}
+.chat-wrapper {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    height: 300px;
+    width: auto;
+    margin: 10px;
+}
+.canvas-wrapper {
+    height: 300px;
+    width: 300px;
+    margin: 10px;
+}
+.messages {
+    overflow-y: scroll;
+    flex: 1;
+}
+.chat-form {
+    display: flex;
+    flex-direction: column;
+}
+.chat-input {
+    flex: 1;
+}
+#canvas {
+    border: 1px solid black;
+    display: block;
+    margin: auto;
+}
