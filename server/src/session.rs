@@ -53,11 +53,16 @@ impl Handler<Event> for Session {
                 self.room = Some(room_name.clone());
                 format!("j{}", room_name)
             }
+            Event::LeaveRoom => {
+                self.room = None;
+                "q".to_string()
+            }
             Event::Draw(x1, y1, x2, y2, pen_size) => {
                 format!("d{},{},{},{},{}", x1, y1, x2, y2, pen_size)
             }
-            Event::NewRound => "r".to_string(),
+            Event::NewRound(username) => format!("r{}", username),
             Event::NewLeader(word) => format!("l{}", word),
+            Event::Winner(username, word) => format!("w{},{}", username, word),
         };
         ctx.text(message);
     }

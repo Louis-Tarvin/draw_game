@@ -13,11 +13,15 @@ pub enum Event {
     /// Draw event containing: (x1, y1, x2, y2, penSize)
     Draw(u32, u32, u32, u32, u32),
     /// Start of a new round
-    NewRound,
+    NewRound(String),
     /// Assign the session a word to draw
     NewLeader(String),
     /// Join a room. Contains the room code
     JoinRoom(String),
+    /// Leave a room
+    LeaveRoom,
+    /// When a user has won. Contains the username and word guessed
+    Winner(String, String),
 }
 
 pub struct Room {
@@ -54,6 +58,7 @@ impl Room {
         self.word = (*words.as_slice().choose(&mut self.rng).unwrap()).to_string();
     }
     fn join(&mut self, session_id: usize, recipient: Recipient<Event>) {
+        self.direct_message(&recipient, Event::NewRound(format!("user_{}", self.current_leader)));
         self.occupants.insert(session_id, recipient);
     }
     fn leave(&mut self, session_id: usize) -> bool {
@@ -72,14 +77,18 @@ impl Room {
         self.current_leader = *new_leader.0;
         for (session_id, recipient) in self.occupants.iter() {
             if *session_id != self.current_leader {
-                self.direct_message(recipient, Event::NewRound);
+                self.direct_message(recipient, Event::NewRound(format!("user_{}", session_id)));
             } else {
                 self.direct_message(recipient, Event::NewLeader(self.word.clone()));
             }
         }
     }
-    fn get_word(&self) -> &str {
-        &self.word
+    fn handle_guess(&mut self, session_id: usize, message: String) {
+        self.broadcast_event(Event::Message(format!("user_{}", session_id), message.clone()));
+        if message.trim().to_lowercase() == self.word {
+            self.broadcast_event(Event::Winner(format!("user_{}", session_id), self.word.clone()));
+            self.new_round();
+        }
     }
 }
 
@@ -98,15 +107,15 @@ impl GameServer {
             rng: ThreadRng::default(),
         }
     }
-    fn direct_message(&self, session_id: usize, event: Event) {
-        if let Some(recipient) = self.recipients.get(&session_id) {
-            if recipient.do_send(event).is_err() {
-                println!("Couldn't send message");
-            }
-        } else {
-            println!("Couldn't find recipient");
-        }
-    }
+    // fn direct_message(&self, session_id: usize, event: Event) {
+    //     if let Some(recipient) = self.recipients.get(&session_id) {
+    //         if recipient.do_send(event).is_err() {
+    //             println!("Couldn't send message");
+    //         }
+    //     } else {
+    //         println!("Couldn't find recipient");
+    //     }
+    // }
     // fn broadcast_event(&self, key: &str, event: Event) {
     //     if let Some(room) = self.rooms.get(key) {
     //         for session_id in room.get_occupants().iter() {
@@ -122,8 +131,9 @@ impl GameServer {
                 .collect();
             if self.rooms.get(&key).is_none() {
                 let recipient = self.recipients.get(&session_id).expect("session_id did not exist");
-                self.rooms.insert(key.clone(), Room::new(session_id, recipient.clone()));
-                self.direct_message(session_id, Event::JoinRoom(key));
+                let room = Room::new(session_id, recipient.clone());
+                room.direct_message(recipient, Event::JoinRoom(key.clone()));
+                self.rooms.insert(key, room);
                 return;
             }
         }
@@ -134,7 +144,7 @@ impl GameServer {
             // recipient.do_send(Event::JoinRoom(key.to_string())).expect("couldn't send to recipient");
             let recipient = self.recipients.get(&session_id).expect("session_id did not exist");
             room.join(session_id, recipient.clone());
-            self.direct_message(session_id, Event::JoinRoom(key.to_string()));
+            room.direct_message(recipient, Event::JoinRoom(key.to_string()));
         }
     }
     fn leave_room(&mut self, key: &str, session_id: usize) {
@@ -219,10 +229,8 @@ impl Handler<ClientMessage> for GameServer {
         match (msg.room, type_char) {
             (Some(room_key), 'c') => {
                 let chat: String = msg.content.chars().skip(1).collect();
-                if let Some(room) = self.rooms.get(&room_key) {
-                    room.broadcast_event(
-                        Event::Message(format!("user_{}", msg.session_id), chat),
-                    );
+                if let Some(room) = self.rooms.get_mut(&room_key) {
+                    room.handle_guess(msg.session_id, chat);
                 }
             }
             (Some(room_key), 'd') => {
@@ -243,7 +251,15 @@ impl Handler<ClientMessage> for GameServer {
                         return;
                     }
                 }
-            },
+            }
+            (Some(room_key), 'q') => {
+                self.leave_room(&room_key, msg.session_id);
+                if let Some(room) = self.rooms.get(&room_key) {
+                    if let Some(recipient) = self.recipients.get(&msg.session_id) {
+                        room.direct_message(recipient, Event::LeaveRoom);
+                    }
+                }
+            }
             (None, 'j') => {
                 let key: String = msg.content.chars().skip(1).collect();
                 self.join_room(&key, msg.session_id);

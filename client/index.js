@@ -4,6 +4,7 @@ var isLeader = false;
 window.onload = function() {
     var canvas = document.getElementById("canvas");
     var context = canvas.getContext("2d");
+    var infoBox = document.getElementById("info");
     socket = new WebSocket("ws://localhost:3001/ws/");
     var rect = canvas.getBoundingClientRect();
 
@@ -31,11 +32,13 @@ window.onload = function() {
             document.getElementById("messages").appendChild(ele);
         } else if (message[0] == 'l') {
             message = message.slice(1);
-            console.log(message);
+            infoBox.innerHTML = "Draw: " + message;
             isLeader = true;
             context.clearRect(0, 0, canvas.width, canvas.height);
         } else if (message[0] == 'r') {
+            var username = message.slice(1);
             isLeader = false;
+            infoBox.innerHTML = "Guess what "+username+" is drawing";
             context.clearRect(0, 0, canvas.width, canvas.height);
         } else if (message[0] == 'j') {
             code = message.slice(1);
@@ -43,6 +46,20 @@ window.onload = function() {
             welcome_message.appendChild(document.createTextNode("Welcome to room: "+code))
             var ele = document.createElement("div");
             ele.appendChild(welcome_message);
+            document.getElementById("messages").appendChild(ele);
+        } else if (message[0] == 'q') {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            infoBox.innerHTML = "";
+            document.getElementById("messages").textContent = "";
+            isLeader = false;
+        } else if (message[0] == 'w') {
+            message = message.slice(1).split(',');
+            var username = message[0];
+            var word = message[1];
+            var win_message = document.createElement("span");
+            win_message.appendChild(document.createTextNode(username + " correctly guessed the word " + word))
+            var ele = document.createElement("div");
+            ele.appendChild(win_message);
             document.getElementById("messages").appendChild(ele);
         } else {
             console.log(message);
@@ -108,6 +125,10 @@ window.onload = function() {
 
     document.getElementById("join-room").addEventListener("click", function() {
         socket.send("j"+document.getElementById("room-key-input").value);
+    });
+
+    document.getElementById("leave-room").addEventListener("click", function() {
+        socket.send("q");
     });
 
     document.getElementById("chat-form").addEventListener("submit", function(e) {
