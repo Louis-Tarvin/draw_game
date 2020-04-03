@@ -1,7 +1,7 @@
 use actix::prelude::*;
 use rand::{distributions::Alphanumeric, rngs::ThreadRng, prelude::*};
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     iter,
 };
 
@@ -15,14 +15,77 @@ pub enum Event {
     /// Start of a new round
     NewRound,
     /// Assign the session a word to draw
-    NewDrawer(String),
+    NewLeader(String),
     /// Join a room. Contains the room code
     JoinRoom(String),
 }
 
+pub struct Room {
+    occupants: HashMap<usize, Recipient<Event>>,
+    current_leader: usize,
+    word: String,
+    rng: ThreadRng,
+}
+impl Room {
+    fn new(session_id: usize, recipient: Recipient<Event>) -> Room {
+        let mut occupants = HashMap::new();
+        occupants.insert(session_id, recipient);
+        let mut room = Room {
+            occupants,
+            current_leader: session_id,
+            word: "".to_string(),
+            rng: ThreadRng::default(),
+        };
+        room.new_round();
+        room
+    }
+    fn direct_message(&self, recipient: &Recipient<Event>, event: Event) {
+        if recipient.do_send(event).is_err() {
+            println!("Couldn't send message");
+        }
+    }
+    fn broadcast_event(&self, event: Event) {
+        for recipient in self.occupants.values() {
+            self.direct_message(recipient, event.clone());
+        }
+    }
+    fn choose_new_word(&mut self) {
+        let words = vec!["cat", "banana", "liberty", "love", "people"];
+        self.word = (*words.as_slice().choose(&mut self.rng).unwrap()).to_string();
+    }
+    fn join(&mut self, session_id: usize, recipient: Recipient<Event>) {
+        self.occupants.insert(session_id, recipient);
+    }
+    fn leave(&mut self, session_id: usize) -> bool {
+        self.occupants.remove(&session_id);
+        if self.occupants.is_empty() {
+            return true;
+        }
+        if self.current_leader == session_id {
+            self.new_round();
+        }
+        false
+    }
+    fn new_round(&mut self) {
+        self.choose_new_word();
+        let new_leader = self.occupants.iter().choose(&mut self.rng).unwrap();
+        self.current_leader = *new_leader.0;
+        for (session_id, recipient) in self.occupants.iter() {
+            if *session_id != self.current_leader {
+                self.direct_message(recipient, Event::NewRound);
+            } else {
+                self.direct_message(recipient, Event::NewLeader(self.word.clone()));
+            }
+        }
+    }
+    fn get_word(&self) -> &str {
+        &self.word
+    }
+}
+
 #[derive(Default)]
 pub struct GameServer {
-    rooms: HashMap<String, HashSet<usize>>,
+    rooms: HashMap<String, Room>,
     recipients: HashMap<usize, Recipient<Event>>,
     rng: ThreadRng,
 }
@@ -44,13 +107,13 @@ impl GameServer {
             println!("Couldn't find recipient");
         }
     }
-    fn broadcast_event(&self, room: &str, event: Event) {
-        if let Some(recipients) = self.rooms.get(room) {
-            for session_id in recipients.iter() {
-                self.direct_message(*session_id, event.clone());
-            }
-        }
-    }
+    // fn broadcast_event(&self, key: &str, event: Event) {
+    //     if let Some(room) = self.rooms.get(key) {
+    //         for session_id in room.get_occupants().iter() {
+    //             self.direct_message(*session_id, event.clone());
+    //         }
+    //     }
+    // }
     fn create_room(&mut self, session_id: usize) {
         for _ in 0..100 {
             let key: String = iter::repeat(())
@@ -58,10 +121,8 @@ impl GameServer {
                 .take(5)
                 .collect();
             if self.rooms.get(&key).is_none() {
-                let mut occupants = HashSet::new();
-                // recipient.do_send(Event::JoinRoom(key.clone())).expect("couldn't send to recipient");
-                occupants.insert(session_id);
-                self.rooms.insert(key.clone(), occupants);
+                let recipient = self.recipients.get(&session_id).expect("session_id did not exist");
+                self.rooms.insert(key.clone(), Room::new(session_id, recipient.clone()));
                 self.direct_message(session_id, Event::JoinRoom(key));
                 return;
             }
@@ -71,14 +132,14 @@ impl GameServer {
     fn join_room(&mut self, key: &str, session_id: usize) {
         if let Some(room) = self.rooms.get_mut(key) {
             // recipient.do_send(Event::JoinRoom(key.to_string())).expect("couldn't send to recipient");
-            room.insert(session_id);
+            let recipient = self.recipients.get(&session_id).expect("session_id did not exist");
+            room.join(session_id, recipient.clone());
             self.direct_message(session_id, Event::JoinRoom(key.to_string()));
         }
     }
     fn leave_room(&mut self, key: &str, session_id: usize) {
         if let Some(room) = self.rooms.get_mut(key) {
-            room.remove(&session_id);
-            if room.is_empty() {
+            if room.leave(session_id) {
                 self.rooms.remove(key);
             }
         }
@@ -156,14 +217,15 @@ impl Handler<ClientMessage> for GameServer {
             return;
         };
         match (msg.room, type_char) {
-            (Some(room), 'c') => {
+            (Some(room_key), 'c') => {
                 let chat: String = msg.content.chars().skip(1).collect();
-                self.broadcast_event(
-                    &room,
-                    Event::Message(format!("user_{}", msg.session_id), chat),
-                );
+                if let Some(room) = self.rooms.get(&room_key) {
+                    room.broadcast_event(
+                        Event::Message(format!("user_{}", msg.session_id), chat),
+                    );
+                }
             }
-            (Some(room), 'd') => {
+            (Some(room_key), 'd') => {
                 let data: String = msg.content.chars().skip(1).collect();
                 if let Ok(content) = data
                     .split(',')
@@ -172,10 +234,11 @@ impl Handler<ClientMessage> for GameServer {
                 {
                     if let [x1, x2, y1, y2, pen_size] = *content {
                         // TODO: check bounds of numbers
-                        self.broadcast_event(
-                            &room,
-                            Event::Draw(x1, x2, y1, y2, pen_size),
-                        );
+                        if let Some(room) = self.rooms.get(&room_key) {
+                            room.broadcast_event(
+                                Event::Draw(x1, x2, y1, y2, pen_size),
+                            );
+                        }
                     } else {
                         return;
                     }

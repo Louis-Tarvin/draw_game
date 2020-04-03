@@ -16,6 +16,34 @@ window.onload = function() {
                 });
                 line.apply(null, p);
             }
+        } else if (message[0] == 'c') {
+            message = message.slice(1).split(",");
+            var username = document.createElement("span");
+            username.className = "username";
+            username.appendChild(document.createTextNode(message[0]));
+            var content = document.createElement("span");
+            content.className = "content";
+            content.appendChild(document.createTextNode(message[1]));
+
+            var ele = document.createElement("div");
+            ele.appendChild(username);
+            ele.appendChild(content);
+            document.getElementById("messages").appendChild(ele);
+        } else if (message[0] == 'l') {
+            message = message.slice(1);
+            console.log(message);
+            isLeader = true;
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        } else if (message[0] == 'r') {
+            isLeader = false;
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        } else if (message[0] == 'j') {
+            code = message.slice(1);
+            var welcome_message = document.createElement("span");
+            welcome_message.appendChild(document.createTextNode("Welcome to room: "+code))
+            var ele = document.createElement("div");
+            ele.appendChild(welcome_message);
+            document.getElementById("messages").appendChild(ele);
         } else {
             console.log(message);
         }
@@ -33,30 +61,36 @@ window.onload = function() {
         context.stroke();
         context.closePath();
 
-        socket.send("d"+[startX, startY, endX, endY, penSize].join(","));
+        if (isLeader) {
+            socket.send("d"+[startX, startY, endX, endY, penSize].join(","));
+        }
     }
 
-    function enableDrawMode() {
+    function startDrawHandler() {
         var drawEnabled = false;
         var penSize = 5;
         var prevX = 0;
         var prevY = 0;
 
-        isLeader = true;
-
         canvas.addEventListener("mousedown", function(e) {
-            drawEnabled = true;
-            prevX = e.clientX - rect.left;
-            prevY = e.clientY - rect.top;
-            line(prevX, prevY, prevX, prevY, penSize);
+            if (isLeader) {
+                drawEnabled = true;
+                rect = canvas.getBoundingClientRect();
+                prevX = e.clientX - rect.left;
+                prevY = e.clientY - rect.top;
+                line(prevX, prevY, prevX, prevY, penSize);
+            }
         });
         document.addEventListener("mouseup", function() {
-            drawEnabled = false;
+            if (isLeader) {
+                drawEnabled = false;
+            }
         });
         canvas.addEventListener("mousemove", function(e) {
-            if (!drawEnabled) {
+            if (!(drawEnabled && isLeader)) {
                 return;
             }
+            rect = canvas.getBoundingClientRect();
             var x = e.clientX - rect.left;
             var y = e.clientY - rect.top;
 
@@ -66,17 +100,18 @@ window.onload = function() {
             prevY = y;
         });
     }
+    startDrawHandler();
 
-    function disableDrawMode() {
-        isLeader = false;
-        canvas.removeEventListener("mousedown");
-        document.removeEventListener("mouseup");
-        canvas.removeEventListener("mousemove");
-    }
+    document.getElementById("new-room").addEventListener("click", function() {
+        socket.send("n");
+    });
 
-    function enableSpectatorMode() {
+    document.getElementById("join-room").addEventListener("click", function() {
+        socket.send("j"+document.getElementById("room-key-input").value);
+    });
 
-    }
-
-    enableDrawMode();
+    document.getElementById("chat-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        socket.send("c"+document.getElementById("chat-input").value);
+    })
 }

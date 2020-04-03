@@ -23,15 +23,15 @@
     width: 300px;
     margin: 10px;
 }
-.messages {
+#messages {
     overflow-y: scroll;
     flex: 1;
 }
-.chat-form {
+#chat-form {
     display: flex;
     flex-direction: column;
 }
-.chat-input {
+#chat-input {
     flex: 1;
 }
 #canvas {

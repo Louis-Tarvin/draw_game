@@ -57,7 +57,7 @@ impl Handler<Event> for Session {
                 format!("d{},{},{},{},{}", x1, y1, x2, y2, pen_size)
             }
             Event::NewRound => "r".to_string(),
-            Event::NewDrawer(word) => format!("n{}", word),
+            Event::NewLeader(word) => format!("l{}", word),
         };
         ctx.text(message);
     }

@@ -10,9 +10,9 @@
       <div class="main">
           <div class="manage-room">
               <form class="room-form">
-                  <input type="button" name="new-room" value="Create new room">
-                  <input type="button" name="join-room" value="Join room">
-                  <input type="text" name="room-key-input">
+                  <input type="button" id="new-room" value="Create new room">
+                  <input type="button" id="join-room" value="Join room">
+                  <input type="text" id="room-key-input">
               </form>
           </div>
           <div class="ui-wrapper">
@@ -20,11 +20,11 @@
                   <canvas id="canvas" width="300" height="300"></canvas>
               </div>
               <div class="chat-wrapper">
-                  <div class="messages">
+                  <div id="messages">
 
                   </div>
-                  <form class="chat-form">
-                      <input class="chat-input" type="text" name="chat-input" autocomplete="off">
+                  <form id="chat-form">
+                      <input class="chat-input" type="text" id="chat-input" autocomplete="off">
                   </form>
               </div>
           </div>
