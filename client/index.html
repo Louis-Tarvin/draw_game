@@ -8,8 +8,8 @@
   </head>
   <body>
       <div id="main">
-          <div class="manage-room">
-              <div class="hideInRoom" id="enter-room">
+          <div id="manage-room" class="hide">
+              <div id="enter-room" class="hideInRoom">
                   <input type="button" id="new-room" value="Create new room">
                   <form id="join-room-form">
                       <input type="submit" id="join-room" value="Join room">
@@ -17,6 +17,12 @@
                   </form>
               </div>
               <input type="button" class="showInRoom" id="leave-room" value="Leave room">
+          </div>
+          <div id="username-wrapper" class="hideInRoom">
+              <form id="username-form">
+                  <input type="text" id="username" value="">
+                  <input type="submit" id="username-submit" value="Choose username">
+              </form>
           </div>
           <div id="info">
 

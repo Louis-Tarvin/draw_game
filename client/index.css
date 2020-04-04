@@ -4,6 +4,10 @@
     margin-right: auto;
 }
 
+.hide {
+    display: none !important;
+}
+
 .manage-room {
     margin: 10px;
 }
