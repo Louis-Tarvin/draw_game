@@ -94,10 +94,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
                 ctx.stop();
             }
             ws::Message::Continuation(_) => {
-                ctx.stop();
+                println!("Client tried to send contintuation message");
             }
             ws::Message::Binary(_) => {
-                ctx.stop();
+                println!("Client tried to send binary message");
             }
             ws::Message::Nop => {}
         }

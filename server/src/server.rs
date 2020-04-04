@@ -57,7 +57,7 @@ impl Room {
     }
 
     fn choose_new_word(&mut self) {
-        let words = vec!["cat", "banana", "liberty", "love", "people"];
+        let words = vec!["cat", "banana", "liberty", "love", "people", "elephant", "house", "tomato", "spoon", "social distancing", "laptop"];
         self.word = (*words.as_slice().choose(&mut self.rng).unwrap()).to_string();
     }
 

@@ -1,6 +1,7 @@
 use actix::prelude::*;
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
+// use actix_files;
 
 pub mod server;
 pub mod session;
@@ -13,8 +14,9 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(game_server.clone())
             .service(web::resource("/ws/").to(socket_route))
+            .service(actix_files::Files::new("/", "../client/"))
     })
-    .bind("127.0.0.1:3001")?
+    .bind("0.0.0.0:3001")?
     .run()
     .await
 }

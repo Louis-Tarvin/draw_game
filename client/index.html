@@ -7,19 +7,21 @@
     <link rel="stylesheet" href="index.css">
   </head>
   <body>
-      <div class="main">
+      <div id="main">
           <div class="manage-room">
-              <form class="room-form">
+              <div class="hideInRoom" id="enter-room">
                   <input type="button" id="new-room" value="Create new room">
-                  <input type="button" id="join-room" value="Join room">
-                  <input type="text" id="room-key-input">
-                  <input type="button" id="leave-room" value="Leave room">
-              </form>
+                  <form id="join-room-form">
+                      <input type="submit" id="join-room" value="Join room">
+                      <input type="text" value="" autocomplete="off" name="room-key-input">
+                  </form>
+              </div>
+              <input type="button" class="showInRoom" id="leave-room" value="Leave room">
           </div>
           <div id="info">
-              
+
           </div>
-          <div class="ui-wrapper">
+          <div class="ui-wrapper showInRoom">
               <div class="canvas-wrapper">
                   <canvas id="canvas" width="300" height="300"></canvas>
               </div>
@@ -28,7 +30,7 @@
 
                   </div>
                   <form id="chat-form">
-                      <input class="chat-input" type="text" id="chat-input" autocomplete="off">
+                      <input class="chat-input" value="" type="text" id="chat-input" autocomplete="off">
                   </form>
               </div>
           </div>
