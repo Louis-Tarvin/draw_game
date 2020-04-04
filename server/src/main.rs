@@ -16,7 +16,7 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/ws/").to(socket_route))
             .service(actix_files::Files::new("/", "../client/"))
     })
-    .bind("0.0.0.0:3001")?
+    .bind("0.0.0.0:3007")?
     .run()
     .await
 }
