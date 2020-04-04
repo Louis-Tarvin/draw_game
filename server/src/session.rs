@@ -22,7 +22,10 @@ impl Actor for Session {
             .into_actor(self)
             .then(|res, act, ctx| {
                 match res {
-                    Ok(res) => act.id = res,
+                    Ok(session_id) => {
+                        act.id = session_id;
+                        ctx.text(format!("c{}", session_id));
+                    },
                     _ => ctx.stop(),
                 }
                 fut::ready(())
@@ -48,10 +51,15 @@ impl Handler<Event> for Session {
             return;
         }
         let message = match event {
-            Event::Message(username, msg) => format!("c{},{}", username, msg),
-            Event::JoinRoom(room_name) => {
+            Event::Message(username, msg) => format!("m{},{}", username, msg),
+            Event::EnterRoom(room_name, users) => {
                 self.room = Some(room_name.clone());
-                format!("j{}", room_name)
+                let mut output = String::with_capacity(1024);
+                output.push_str(&format!("e{}", room_name));
+                for (session_id, username) in users {
+                    output.push_str(&format!(",{},{}", session_id, username));
+                }
+                dbg!(output)
             }
             Event::LeaveRoom => {
                 self.room = None;
@@ -63,6 +71,8 @@ impl Handler<Event> for Session {
             Event::NewRound(username) => format!("r{}", username),
             Event::NewLeader(word) => format!("l{}", word),
             Event::Winner(username, word) => format!("w{},{}", username, word),
+            Event::UserJoin(session_id, username) => format!("j{},{}", session_id, username),
+            Event::UserGone(session_id) => format!("g{}", session_id),
         };
         ctx.text(message);
     }

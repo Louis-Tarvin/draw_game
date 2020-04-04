@@ -4,6 +4,7 @@ class Game {
 
         this.interface = new InterfaceManager(this.socketManager, this.drawCallback.bind(this));
         this.isLeader = false;
+        this.id;
     }
 
     handleSocketMessage(e) {
@@ -16,6 +17,8 @@ class Game {
                 this.interface.handleDraw(p);
             }
         } else if (message[0] == 'c') {
+            self.id = message.slice(1);
+        } else if (message[0] == 'm') {
             message = message.slice(1).split(',');
             this.interface.addChat(message[0], message[1]);
         } else if (message[0] == 'l') {
@@ -24,9 +27,23 @@ class Game {
         } else if (message[0] == 'r') {
             var username = message.slice(1);
             this.becomeGuesser(username);
+        } else if (message[0] == 'e') {
+            var parts = message.slice(1).split(',');
+            var code = parts.shift();
+            var users = {};
+            for (var i = 0; i < parts.length; i+= 2) {
+                users[parts[i]] = {
+                    username: parts[i+1],
+                    isCurrentUser: this.id === parts[i],
+                };
+            }
+            this.interface.enteredRoom(code, users);
         } else if (message[0] == 'j') {
-            var code = message.slice(1);
-            this.interface.joinedRoom(code);
+            var parts = message.slice(1).split(',');
+            this.interface.joinRoom(parts[0], parts[1]);
+        } else if (message[0] == 'g') {
+            var userId = message.slice(1);
+            this.interface.userGone(userId);
         } else if (message[0] == 'q') {
             this.interface.leftRoom();
         } else if (message[0] == 'w') {
@@ -65,14 +82,31 @@ class InterfaceManager {
         this.infoBox = document.getElementById('info');
         this.messageBox = document.getElementById('messages');
         this.main = document.getElementById('main');
+        this.users = null;
+
+        document.getElementById('username-form').addEventListener('submit', e => {
+            e.preventDefault();
+            var input = e.target['username'];
+            var username = input.value;
+            if (username.includes(',') || username.length > 15) {
+                alert('username cannot contain a comma and must be less then 15 characters');
+            } else if (username == "") {
+                alert('username cannot be empty');
+            } else {
+                this.username = username;
+                input.value = '';
+                document.getElementById('username-wrapper').classList.add('hide');
+                document.getElementById('manage-room').classList.remove('hide');
+            }
+        });
 
         document.getElementById('new-room').addEventListener('click', () => {
-            socketManager.newRoom();
+            socketManager.newRoom(this.username);
         });
 
         document.getElementById('join-room-form').addEventListener('submit', e => {
             var input = e.target['room-key-input'];
-            socketManager.joinRoom(input.value);
+            socketManager.joinRoom(input.value, this.username);
             input.value = '';
 
             e.preventDefault();
@@ -94,10 +128,10 @@ class InterfaceManager {
         this.infoBox.textContent = msg;
     }
 
-    addChat(username, content) {
+    addChat(userId, content) {
         var usernameElement = document.createElement('span');
         usernameElement.className = 'username';
-        usernameElement.appendChild(document.createTextNode(username));
+        usernameElement.appendChild(document.createTextNode(this.users[userId].username));
 
         var contentElement = document.createElement('span');
         contentElement.className = 'content';
@@ -109,27 +143,40 @@ class InterfaceManager {
         this.messageBox.appendChild(ele);
     }
 
+    printAnnouncement(message) {
+        var ele = document.createElement('div');
+        ele.className = 'announcement';
+        ele.appendChild(document.createTextNode(message));
+        this.messageBox.appendChild(ele);
+    }
+
     becomeLeader(word) {
         this.info('Draw: ' + word);
         this.canvasManager.reset();
         this.canvasManager.setEnabled(true);
     }
 
-    becomeGuesser(leaderUsername) {
-        this.info('Guess what ' + leaderUsername + ' is drawing');
+    becomeGuesser(leaderId) {
+        this.info('Guess what ' + this.users[leaderId].username + ' is drawing');
         this.canvasManager.reset();
         this.canvasManager.setEnabled(false);
     }
 
-    joinedRoom(code) {
+    enteredRoom(code, users) {
+        this.users = users;
         console.debug('Joined room', code);
-        var welcome_message = document.createElement('span');
-        welcome_message.appendChild(document.createTextNode('Welcome to room: ' + code))
-        var ele = document.createElement('div');
-        ele.appendChild(welcome_message);
-        this.messageBox.appendChild(ele);
+        this.printAnnouncement('Welcome to room: ' + code);
+        var userString = Object.values(this.users).map(user => user.username).join(', ')
+        this.printAnnouncement('Current connected users: ' + userString);
 
         this.main.classList.add('inRoom');
+
+    }
+
+    joinRoom(session_id, username) {
+        console.debug(username, 'joined room with session_id', session_id);
+        this.printAnnouncement('User ' + username + ' has entered the room');
+        this.users[session_id] = { username, isCurrentUser: false };
     }
 
     leftRoom() {
@@ -141,12 +188,14 @@ class InterfaceManager {
         this.main.classList.remove('inRoom');
     }
 
-    handleWinner(username, word) {
-        var win_message = document.createElement('span');
-        win_message.appendChild(document.createTextNode(username + ' correctly guessed the word ' + word))
-        var ele = document.createElement('div');
-        ele.appendChild(win_message);
-        this.messageBox.appendChild(ele);
+    userGone(session_id) {
+        this.printAnnouncement('User ' + this.users[session_id].username + ' has left the room');
+        delete this.users[session_id];
+    }
+
+    handleWinner(userId, word) {
+        this.printAnnouncement(self.users[userId].username
+            + ' correctly guessed the word ' + word);
     }
 
     handleDraw(params) {
@@ -251,19 +300,19 @@ class SocketManager {
     }
 
     sendChat(message) {
-        this.socket.send('c' + message);
+        this.socket.send('m' + message);
     }
 
-    joinRoom(roomCode) {
-        this.socket.send('j' + roomCode);
+    joinRoom(roomCode, username) {
+        this.socket.send('j' + roomCode + ',' + username);
     }
 
     leaveRoom() {
         this.socket.send('q');
     }
 
-    newRoom() {
-        this.socket.send('n');
+    newRoom(username) {
+        this.socket.send('n' + username);
     }
 
     sendDraw(params) {
