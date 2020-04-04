@@ -12,16 +12,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(game_server.clone())
-            // redirect to websocket.html
-            // .service(web::resource("/").route(web::get().to(|| {
-            //     HttpResponse::Found()
-            //         .header("LOCATION", "/static/websocket.html")
-            //         .finish()
-            // })))
-            // websocket
             .service(web::resource("/ws/").to(socket_route))
-            // static resources
-            // .service(fs::Files::new("/static/", "static/"))
     })
     .bind("127.0.0.1:3001")?
     .run()

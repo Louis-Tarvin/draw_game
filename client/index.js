@@ -79,7 +79,11 @@ window.onload = function() {
         context.closePath();
 
         if (isLeader) {
-            socket.send("d"+[startX, startY, endX, endY, penSize].join(","));
+            var params = [startX, startY, endX, endY, penSize].map(function(param) {
+              // Don't allow decimal coordinates
+              return Math.round(param);
+            });
+            socket.send("d"+params.join(","));
         }
     }
 
