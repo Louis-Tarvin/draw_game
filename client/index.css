@@ -34,6 +34,19 @@
     margin: 10px;
 }
 
+.chat-wrapper .username {
+    color: blue;
+}
+
+.chat-wrapper .username::after {
+    content: ': ';
+}
+
+.chat-wrapper .announcement {
+    color: #9b59b6;
+    font-weight: bold;
+}
+
 .canvas-wrapper {
     height: 300px;
     width: 300px;

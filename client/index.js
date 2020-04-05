@@ -194,7 +194,7 @@ class InterfaceManager {
     }
 
     handleWinner(userId, word) {
-        this.printAnnouncement(self.users[userId].username
+        this.printAnnouncement(this.users[userId].username
             + ' correctly guessed the word ' + word);
     }
 
