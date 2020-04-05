@@ -1,6 +1,6 @@
 use actix::prelude::*;
 use rand::{distributions::Alphanumeric, prelude::*, rngs::ThreadRng};
-use std::{collections::HashMap, iter};
+use std::collections::{HashMap, VecDeque};
 
 #[derive(Message, Clone)]
 #[rtype(result = "()")]
@@ -31,17 +31,21 @@ pub struct Room {
     current_leader: usize,
     word: String,
     rng: ThreadRng,
+    queue: VecDeque<usize>,
 }
 impl Room {
     fn new(key: String, session_id: usize, recipient: Recipient<Event>, username: String) -> Room {
         let mut occupants = HashMap::new();
         occupants.insert(session_id, (recipient.clone(), username.clone()));
+        let mut queue = VecDeque::new();
+        queue.push_back(session_id);
         let mut room = Room {
             key: key.clone(),
             occupants,
-            current_leader: session_id,
+            current_leader: 0,
             word: "".to_string(),
             rng: ThreadRng::default(),
+            queue,
         };
         room.direct_message(
             &recipient,
@@ -88,6 +92,7 @@ impl Room {
             Event::EnterRoom(self.key.to_string(), self.get_user_list()),
         );
         self.direct_message(&recipient, Event::NewRound(self.current_leader));
+        self.queue.push_back(session_id);
     }
 
     fn leave(&mut self, session_id: usize) -> bool {
@@ -106,8 +111,12 @@ impl Room {
 
     fn new_round(&mut self) {
         self.choose_new_word();
-        let new_leader = self.occupants.iter().choose(&mut self.rng).unwrap();
-        self.current_leader = *new_leader.0;
+        let mut new_leader = dbg!(&mut self.queue).pop_front().expect("Leader queue was empty");
+        while self.occupants.get(&new_leader).is_none() {
+            new_leader = self.queue.pop_front().expect("Leader queue was empty");
+        }
+        self.queue.push_back(self.current_leader);
+        self.current_leader = new_leader;
         for (session_id, (recipient, _)) in self.occupants.iter() {
             if *session_id != self.current_leader {
                 self.direct_message(recipient, Event::NewRound(self.current_leader));
@@ -171,7 +180,7 @@ impl GameServer {
     }
     fn create_room(&mut self, session_id: usize, username: String) {
         for _ in 0..100 {
-            let key: String = iter::repeat(())
+            let key: String = std::iter::repeat(())
                 .map(|()| self.rng.sample(Alphanumeric))
                 .take(5)
                 .collect();
