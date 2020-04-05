@@ -59,7 +59,7 @@ impl Handler<Event> for Session {
                 for (session_id, username) in users {
                     output.push_str(&format!(",{},{}", session_id, username));
                 }
-                dbg!(output)
+                output
             }
             Event::LeaveRoom => {
                 self.room = None;

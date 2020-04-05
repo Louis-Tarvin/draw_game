@@ -1,6 +1,7 @@
 use actix::prelude::*;
 use rand::{distributions::Alphanumeric, prelude::*, rngs::ThreadRng};
 use std::collections::{HashMap, VecDeque};
+use std::sync::Arc;
 
 #[derive(Message, Clone)]
 #[rtype(result = "()")]
@@ -22,19 +23,28 @@ pub enum Event {
     /// When another user joins
     UserJoin(usize, String),
     /// When another user leaves
-    UserGone(usize)
+    UserGone(usize),
 }
 
 pub struct Room {
     key: String,
     occupants: HashMap<usize, (Recipient<Event>, String)>,
     current_leader: usize,
-    word: String,
+    word_list: Arc<Vec<String>>,
+    word: usize,
     rng: ThreadRng,
     queue: VecDeque<usize>,
+    excluded_words: VecDeque<usize>,
+    max_excluded_words: usize,
 }
 impl Room {
-    fn new(key: String, session_id: usize, recipient: Recipient<Event>, username: String) -> Room {
+    fn new(
+        key: String,
+        word_list: Arc<Vec<String>>,
+        session_id: usize,
+        recipient: Recipient<Event>,
+        username: String,
+    ) -> Room {
         let mut occupants = HashMap::new();
         occupants.insert(session_id, (recipient.clone(), username.clone()));
         let mut queue = VecDeque::new();
@@ -43,9 +53,12 @@ impl Room {
             key: key.clone(),
             occupants,
             current_leader: 0,
-            word: "".to_string(),
+            max_excluded_words: word_list.len() / 10,
+            word_list,
+            word: 0,
             rng: ThreadRng::default(),
             queue,
+            excluded_words: VecDeque::new(),
         };
         room.direct_message(
             &recipient,
@@ -68,25 +81,23 @@ impl Room {
     }
 
     fn choose_new_word(&mut self) {
-        let words = vec![
-            "cat",
-            "banana",
-            "liberty",
-            "love",
-            "people",
-            "elephant",
-            "house",
-            "tomato",
-            "spoon",
-            "social distancing",
-            "laptop",
-        ];
-        self.word = (*words.as_slice().choose(&mut self.rng).unwrap()).to_string();
+        loop {
+            let word_index = self.rng.gen_range(0, self.word_list.len());
+            if !self.excluded_words.contains(&word_index) {
+                self.excluded_words.push_back(self.word);
+                self.word = word_index;
+                if self.excluded_words.len() > self.max_excluded_words {
+                    self.excluded_words.pop_front();
+                }
+                break;
+            }
+        }
     }
 
     fn join(&mut self, session_id: usize, recipient: Recipient<Event>, username: String) {
         self.broadcast_event(Event::UserJoin(session_id, username.clone()));
-        self.occupants.insert(session_id, (recipient.clone(), username));
+        self.occupants
+            .insert(session_id, (recipient.clone(), username));
         self.direct_message(
             &recipient,
             Event::EnterRoom(self.key.to_string(), self.get_user_list()),
@@ -111,26 +122,32 @@ impl Room {
 
     fn new_round(&mut self) {
         self.choose_new_word();
-        let mut new_leader = dbg!(&mut self.queue).pop_front().expect("Leader queue was empty");
-        while self.occupants.get(&new_leader).is_none() {
-            new_leader = self.queue.pop_front().expect("Leader queue was empty");
+        while let Some(new_leader) = self.queue.pop_front() {
+            if self.occupants.get(&new_leader).is_some() {
+                self.queue.push_back(self.current_leader);
+                self.current_leader = new_leader;
+                break;
+            }
         }
-        self.queue.push_back(self.current_leader);
-        self.current_leader = new_leader;
         for (session_id, (recipient, _)) in self.occupants.iter() {
             if *session_id != self.current_leader {
                 self.direct_message(recipient, Event::NewRound(self.current_leader));
             } else {
-                self.direct_message(recipient, Event::NewLeader(self.word.clone()));
+                self.direct_message(
+                    recipient,
+                    Event::NewLeader(self.word_list[self.word].clone()),
+                );
             }
         }
     }
 
     fn handle_guess(&mut self, session_id: usize, message: String) {
-        self.broadcast_event(Event::Message(session_id, message.clone()));
-        if message.trim().to_lowercase() == self.word {
-            self.broadcast_event(Event::Winner(session_id, self.word.clone()));
-            self.new_round();
+        if session_id != self.current_leader {
+            self.broadcast_event(Event::Message(session_id, message.clone()));
+            if message.trim().to_lowercase() == self.word_list[self.word] {
+                self.broadcast_event(Event::Winner(session_id, self.word_list[self.word].clone()));
+                self.new_round();
+            }
         }
     }
 
@@ -168,14 +185,22 @@ pub struct GameServer {
     rooms: HashMap<String, Room>,
     recipients: HashMap<usize, Recipient<Event>>,
     rng: ThreadRng,
+    word_list: Arc<Vec<String>>,
 }
 
 impl GameServer {
     pub fn new() -> Self {
+        let word_list = include_str!("words.txt");
+        let word_list: Vec<_> = word_list
+            .split('\n')
+            .map(|word| word.trim().to_string())
+            .filter(|word| !word.is_empty())
+            .collect();
         GameServer {
             rooms: HashMap::new(),
             recipients: HashMap::new(),
             rng: ThreadRng::default(),
+            word_list: Arc::new(word_list),
         }
     }
     fn create_room(&mut self, session_id: usize, username: String) {
@@ -189,7 +214,13 @@ impl GameServer {
                     .recipients
                     .get(&session_id)
                     .expect("session_id did not exist");
-                let room = Room::new(key.clone(), session_id, recipient.clone(), username);
+                let room = Room::new(
+                    key.clone(),
+                    Arc::clone(&self.word_list),
+                    session_id,
+                    recipient.clone(),
+                    username,
+                );
 
                 self.rooms.insert(key, room);
                 return;
