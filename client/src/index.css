@@ -1,0 +1,12 @@
+body {
+  margin: 0;
+  font-family: 'Inconsolata';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  background-color: #9B59B6;
+}
+
+* {
+    margin: 0;
+}

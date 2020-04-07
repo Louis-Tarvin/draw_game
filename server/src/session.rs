@@ -70,7 +70,7 @@ impl Handler<Event> for Session {
             }
             Event::NewRound(username) => format!("r{}", username),
             Event::NewLeader(word) => format!("l{}", word),
-            Event::Winner(username, word) => format!("w{},{}", username, word),
+            Event::Winner(session_id, word) => format!("w{},{}", session_id, word),
             Event::UserJoin(session_id, username) => format!("j{},{}", session_id, username),
             Event::UserGone(session_id) => format!("g{}", session_id),
         };
