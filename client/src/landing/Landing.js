@@ -4,7 +4,7 @@ import useInput from 'common/useInput';
 
 import './Landing.css';
 
-function EnterRoom({ username, socketManager }) {
+function EnterRoom({ username, socketManager, enabled }) {
     const [roomCode, roomCodeField] = useInput({ placeholder: 'Room code' });
 
     const joinRoomSubmit = e => {
@@ -21,7 +21,7 @@ function EnterRoom({ username, socketManager }) {
     };
 
     return (
-        <div className="enter-room">
+        <div className={classNames('enter-room', { 'show': enabled })}>
             <h2>Enter a room:</h2>
             <form className="join-room" onSubmit={joinRoomSubmit}>
                 {roomCodeField}
@@ -53,10 +53,10 @@ export default function Landing({ socketManager }) {
                     than 15 characters.
                 </p>
 
-                {usernameIsValid ?
-                    (<EnterRoom username={username} socketManager={socketManager}/>)
-                    : null
-                }
+                <EnterRoom
+                    username={username}
+                    socketManager={socketManager}
+                    enabled={usernameIsValid} />
             </div>
         </div>
     );

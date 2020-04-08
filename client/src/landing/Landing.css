@@ -52,6 +52,11 @@
 
 .enter-room {
     margin-top: 30px;
+    display: none;
+}
+
+.enter-room.show {
+    display: block;
 }
 
 .enter-room .join-room {
