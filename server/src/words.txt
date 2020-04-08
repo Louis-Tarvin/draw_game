@@ -13,3 +13,43 @@ time
 cactus
 sound
 book
+parent
+child
+sibling
+pea
+pacman
+toilet
+mirror
+window
+pizza
+iceberg
+egg
+fried egg
+scrambled egg
+hammer
+tree
+cow
+pig
+electricity
+water
+phone
+bowl
+bowling
+fork
+knife
+devil
+saint
+holy
+glass
+ladder
+australia
+india
+handle
+candle
+fork handle
+four candles
+comedy
+science
+skiing
+black hole
+bee
