@@ -1,0 +1,15 @@
+name: Draw game server
+about: The server for the draw game
+
+args:
+    - serve_dir:
+        short: d
+        takes_value: true
+        help: |
+            Mount this directory at the root level of the server.
+            Serves 'index.html' at '/'.
+    - port:
+        short: p
+        takes_value: true
+        help: |
+            The port for the server defaults to 3007.
