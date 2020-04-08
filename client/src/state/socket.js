@@ -38,6 +38,7 @@ export default class SocketManager {
             for (var i = 0; i < parts.length; i+= 2) {
                 users[parts[i]] = {
                     username: parts[i+1],
+                    id: parts[i],
                 };
             }
             this.store.dispatch(joinedRoom(code, users))
@@ -52,15 +53,10 @@ export default class SocketManager {
         } else if (message[0] === 'w') {
             var data = message.slice(1).split(',');
             this.store.dispatch(winner(data[0], data[1]));
-            // this.interface.handleWinner(data[0], data[1]);
         } else {
             console.log(message);
         }
     }
-
-    // setChatHandler(callback) {
-    //     this.chatHandler = callback;
-    // }
 
     setDrawHandler(callback) {
         this.drawHandler = callback;

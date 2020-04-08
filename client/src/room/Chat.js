@@ -17,14 +17,14 @@ function Message({ message, users }) {
         case 'chat':
             return (
                 <div className="message">
-                    <span className="username">{users[message.userID].username}: </span>
+                    <span className="username">{message.user.username}: </span>
                     <span className="content">{message.content}</span>
                 </div>
             );
         case 'winner':
             return (
                 <div className="message winner">
-                    <span className="username">{users[message.winnerID].username} </span>
+                    <span className="username">{message.winner.username} </span>
                     correctly guessed the word
                     <span className="word"> {message.word}</span>
                 </div>
@@ -32,14 +32,14 @@ function Message({ message, users }) {
         case 'user_join':
             return (
                 <div className="message user-joined">
-                    <span className="username">{users[message.userID].username} </span>
+                    <span className="username">{message.user.username} </span>
                     joined the room
                 </div>
             );
         case 'user_left':
             return (
                 <div className="message user-left">
-                    <span className="username">{message.username}</span>
+                    <span className="username">{message.user.username}</span>
                     left the room
                 </div>
             );

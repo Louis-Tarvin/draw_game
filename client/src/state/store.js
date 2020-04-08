@@ -23,13 +23,13 @@ function stateManager(state = {}, action) {
         case 'CHAT_MESSAGE':
             newState = { ...state };
             newState.room = { ...newState.room };
-            const chatMessage = { type: 'chat', userID: action.message.userID, content: action.message.content };
+            const chatMessage = { type: 'chat', user: state.room.users[action.message.userID], content: action.message.content };
             newState.room.messages = pushItem(newState.room.messages, chatMessage);
             return newState;
         case 'winner':
             newState = { ...state };
             newState.room = { ...newState.room };
-            const winMessage = { type: 'winner', winnerID: action.winnerID, word: action.word };
+            const winMessage = { type: 'winner', winner: state.room.users[action.userID], word: action.word };
             newState.room.messages = pushItem(newState.room.messages, winMessage);
             return newState;
         case 'BECOME_LEADER':
@@ -37,35 +37,37 @@ function stateManager(state = {}, action) {
             newState = { ...state };
             newState.room = { ...newState.room };
             newState.room.word = action.word;
-            newState.room.leaderID = state.socketID;
+            newState.room.isLeader = true;
+            newState.room.leader = state.room.users[state.socketID];
             return newState;
         case 'BECOME_GUESSER':
             console.debug('Became guesser leaderid =', action.leaderID);
             newState = { ...state };
             newState.room = { ...newState.room };
             newState.room.word = null;
-            newState.room.leaderID = action.leaderID;
+            newState.room.isLeader = false;
+            newState.room.leader = state.room.users[action.leaderID];
             return newState;
         case 'USER_JOINED':
             newState = { ...state };
             newState.room = { ...newState.room };
             newState.room.users = Object.assign({}, newState.room.users);
             // This should be the same data structure as is created in JOINED_ROOM
-            newState.room.users[action.userID] = { username: action.username }
-            const joinMessage = { type: 'user_join', userID: action.userID };
+            newState.room.users[action.userID] = { username: action.username, id: action.userID };
+            const joinMessage = { type: 'user_join', user: newState.room.users[action.userID] };
             newState.room.messages = pushItem(newState.room.messages, joinMessage);
 
             return newState;
         case 'USER_LEFT':
             newState = { ...state };
             newState.room = { ...newState.room };
-            newState.room.users = Object.keys(newState.room.users).reduce((acc, key) => {
+            newState.room.users = Object.keys(state.room.users).reduce((acc, key) => {
                 // Copy all keys except user key to new object
-                if (key !== action.userID) acc[key] = newState.room.users;
+                if (key !== action.userID) acc[key] = newState.room.users[key];
                 return acc;
-            });
-            // Need username since the user can't be looked up by ID
-            const leaveMessage = { type: 'user_left', username: state.room.users[action.userID] };
+            }, {});
+
+            const leaveMessage = { type: 'user_left', user: state.room.users[action.userID] };
             newState.room.messages = pushItem(newState.room.messages, leaveMessage);
             return newState;
         default:
