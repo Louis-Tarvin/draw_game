@@ -227,7 +227,6 @@ class CanvasManager {
         });
         document.addEventListener('mouseup', () => {
             this.penActive = false;
-            this.left = false;
         });
         this.canvas.addEventListener('mousemove', e => {
             if (!(this.penActive && this.enabled)) {
