@@ -24,7 +24,7 @@ async fn main() -> std::io::Result<()> {
     let game_server = server::GameServer::new().start();
 
     let serve_dir_msg = if let Some(dir) = &serve_dir {
-        format!("serving {} at '/", dir)
+        format!("serving {} at '/'", dir)
     } else {
         "".to_string()
     };

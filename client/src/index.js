@@ -8,7 +8,12 @@ import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 
-const socketManager = new SocketManager('ws://' + window.location.host + '/ws/', store);
+let ws_proto = 'ws://';
+if (window.location.protocol === 'https:') {
+    ws_proto = 'wss://'
+}
+
+const socketManager = new SocketManager(ws_proto + window.location.host + '/ws/', store);
 
 ReactDOM.render(
   <React.StrictMode>
