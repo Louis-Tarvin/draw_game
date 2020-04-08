@@ -39,7 +39,7 @@ function Message({ message, users }) {
         case 'user_left':
             return (
                 <div className="message user-left">
-                    <span className="username">{message.user.username}</span>
+                    <span className="username">{message.user.username} </span>
                     left the room
                 </div>
             );
@@ -68,7 +68,7 @@ export default function Chat({ socketManager, disabled }) {
             <form className="chat-form" onSubmit={chatSubmit}>
                 <input type="text"
                     value={message}
-                    placeholder={disabled ? "You aren't allowed to guess and draw": "Make a guess"}
+                    placeholder={disabled ? "Can't chat while drawing": "Make a guess"}
                     onChange={e => setMessage(e.target.value)}
                     disabled={disabled}/>
             </form>

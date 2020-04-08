@@ -66,6 +66,33 @@ canvas {
     overflow-y: scroll;
 }
 
+.username {
+    font-weight: bolder;
+}
+
+.room-code {
+    font-weight: bold;
+}
+
+.initial {
+    color: grey;
+}
+
+.winner {
+    color: grey;
+    font-style: italic;
+}
+
+.user-joined {
+    color: grey;
+    font-style: italic;
+}
+
+.user-left {
+    color: grey;
+    font-style: italic;
+}
+
 input[type="text"] {
     width: 100%;
     border: 0;
