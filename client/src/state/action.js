@@ -33,3 +33,7 @@ export function userJoinedRoom(userID, username) {
 export function userLeftRoom(userID) {
     return { type: 'USER_LEFT', userID };
 }
+
+export function leaveRoom() {
+    return { type: 'LEAVE_ROOM' };
+}

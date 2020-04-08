@@ -1,4 +1,13 @@
-import { socketConnected, joinedRoom, becomeLeader, becomeGuesser, chatMessage, userJoinedRoom, userLeftRoom, winner } from './action';
+import {
+    socketConnected,
+    joinedRoom,
+    becomeLeader,
+    becomeGuesser,
+    chatMessage,
+    userJoinedRoom,
+    userLeftRoom,
+    winner,
+    leaveRoom } from './action';
 
 export default class SocketManager {
     constructor(url, store) {
@@ -49,7 +58,7 @@ export default class SocketManager {
             let userID = message.slice(1);
             this.store.dispatch(userLeftRoom(userID));
         } else if (message[0] === 'q') {
-            this.store.dispatch(userLeftRoom());
+            this.store.dispatch(leaveRoom());
         } else if (message[0] === 'w') {
             var data = message.slice(1).split(',');
             this.store.dispatch(winner(data[0], data[1]));
