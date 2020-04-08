@@ -12,6 +12,13 @@ export default function Room({ socketManager }) {
     const leader = useSelector(state => state.room.leader);
     const isLeader = useSelector(state => state.room.isLeader);
 
+    const leaveRoomSubmit = e => {
+        e.preventDefault();
+
+        console.debug('Leaving room', roomCode);
+        socketManager.leaveRoom();
+    };
+
     // Leader is sent shortly after joining room for first time
     if (!leader) {
         return (<></>);
@@ -28,7 +35,12 @@ export default function Room({ socketManager }) {
         <div className="room">
             <div className="room-wrapper">
                 <div className="canvas-card">
-                    <h2>In room {roomCode}</h2>
+                    <div className="room-status-bar">
+                        <h2>In room {roomCode}</h2>
+                        <form className="leave-form" onSubmit={leaveRoomSubmit}>
+                            <input type="submit" value="Leave Room" />
+                        </form>
+                    </div>
                     {title}
                     <Canvas socketManager={socketManager} isLeader={isLeader} />
                 </div>
