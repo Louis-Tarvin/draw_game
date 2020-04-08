@@ -2,6 +2,8 @@ use actix::prelude::*;
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 
+use log::info;
+
 pub mod server;
 pub mod session;
 
@@ -9,6 +11,8 @@ use clap::{crate_authors, crate_version, load_yaml};
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init();
+
     let yaml = load_yaml!("cli.yml");
     let matches = clap::App::from(yaml)
         .version(crate_version!())
@@ -29,7 +33,7 @@ async fn main() -> std::io::Result<()> {
         "".to_string()
     };
 
-    println!("Starting server at 0.0.0.0:{} {}", port, serve_dir_msg);
+    info!("Starting server at 0.0.0.0:{} {}", port, serve_dir_msg);
 
     HttpServer::new(move || {
         let app = App::new()
