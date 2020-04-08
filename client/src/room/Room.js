@@ -19,17 +19,23 @@ export default function Room({ socketManager }) {
 
     let title;
     if (isLeader) {
-        title = (<h2>Draw {word}</h2>);
+        title = (<h2 className="title">Draw {word}</h2>);
     } else {
-        title = (<h2>Guess what {leader.username} is drawing</h2>);
+        title = (<h2 className="title">Guess what {leader.username} is drawing</h2>);
     }
 
     return (
         <div className="room">
-            <h2>In room {roomCode}</h2>
-            {title}
-            <Canvas socketManager={socketManager} isLeader={isLeader} />
-            <Chat socketManager={socketManager} disabled={isLeader} />
+            <div className="room-wrapper">
+                <div className="canvas-card">
+                    <h2>In room {roomCode}</h2>
+                    {title}
+                    <Canvas socketManager={socketManager} isLeader={isLeader} />
+                </div>
+                <div className="chat-card">
+                    <Chat socketManager={socketManager} disabled={isLeader} />
+                </div>
+            </div>
         </div>
     );
 }
