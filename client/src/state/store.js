@@ -26,10 +26,10 @@ function stateManager(state = {}, action) {
             const chatMessage = { type: 'chat', user: state.room.users[action.message.userID], content: action.message.content };
             newState.room.messages = pushItem(newState.room.messages, chatMessage);
             return newState;
-        case 'winner':
+        case 'WINNER':
             newState = { ...state };
             newState.room = { ...newState.room };
-            const winMessage = { type: 'winner', winner: state.room.users[action.userID], word: action.word };
+            const winMessage = { type: 'winner', winner: state.room.users[action.winnerID], word: action.word };
             newState.room.messages = pushItem(newState.room.messages, winMessage);
             return newState;
         case 'BECOME_LEADER':
