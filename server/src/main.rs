@@ -7,6 +7,7 @@ use flexi_logger::{Duplicate, Logger, Criterion, Naming, Cleanup};
 
 pub mod server;
 pub mod session;
+pub mod word_pack;
 
 use clap::{crate_authors, crate_version, load_yaml};
 
@@ -36,7 +37,9 @@ async fn main() -> std::io::Result<()> {
 
     let serve_dir = matches.value_of("serve_dir").map(|x| x.to_string());
 
-    let game_server = server::GameServer::new().start();
+    let word_pack = matches.value_of("word_pack").unwrap_or("words.txt");
+
+    let game_server = server::GameServer::new(word_pack).start();
 
     let serve_dir_msg = if let Some(dir) = &serve_dir {
         format!("serving {} at '/'", dir)
