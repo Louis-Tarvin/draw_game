@@ -83,7 +83,8 @@ impl Handler<Event> for Session {
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         let msg = match msg {
-            Err(_) => {
+            Err(err) => {
+                error!("Websocket result (uid={}) was an error {:?}", self.id, err);
                 ctx.stop();
                 return;
             }

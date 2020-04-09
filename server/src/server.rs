@@ -3,7 +3,7 @@ use rand::{distributions::Alphanumeric, prelude::*, rngs::ThreadRng};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
-use log::{trace, debug, info, warn};
+use log::{debug, info, trace, warn};
 
 #[derive(Message, Clone)]
 #[rtype(result = "()")]
@@ -62,12 +62,6 @@ impl Room {
             queue,
             excluded_words: VecDeque::new(),
         };
-        trace!(
-            "Room {} was created by user {} ({})",
-            key,
-            username,
-            session_id
-        );
         room.direct_message(
             &recipient,
             Event::EnterRoom(key, vec![(session_id, username)]),
@@ -246,7 +240,10 @@ impl GameServer {
             .filter(|word| !word.is_empty())
             .collect();
 
-        info!("Game server instance created with {} words", word_list.len());
+        info!(
+            "Game server instance created with {} words",
+            word_list.len()
+        );
 
         GameServer {
             rooms: HashMap::new(),
@@ -262,18 +259,24 @@ impl GameServer {
                 .take(5)
                 .collect();
             if self.rooms.get(&key).is_none() {
-                if let Some(recipient) = self
-                    .recipients
-                    .get(&session_id) {
+                if let Some(recipient) = self.recipients.get(&session_id) {
                     let room = Room::new(
                         key.clone(),
                         Arc::clone(&self.word_list),
                         session_id,
                         recipient.clone(),
-                        username,
+                        username.clone(),
                     );
 
-                    self.rooms.insert(key, room);
+                    self.rooms.insert(key.clone(), room);
+
+                    trace!(
+                        "Room {} was created by user {} ({}), there are now {} rooms",
+                        key,
+                        username,
+                        session_id,
+                        self.rooms.len(),
+                    );
                 } else {
                     warn!("User creating a room didn't exist");
                 }
@@ -292,7 +295,10 @@ impl GameServer {
             room.join(session_id, recipient.clone(), username);
         } else {
             // Perfectly normal user behaviour (e.g. enter wrong key by accident)
-            debug!("User {} ({}) tried to join non-existant room {}", username, session_id, key);
+            debug!(
+                "User {} ({}) tried to join non-existant room {}",
+                username, session_id, key
+            );
         }
     }
     fn leave_room(&mut self, key: &str, session_id: usize) {
@@ -300,9 +306,17 @@ impl GameServer {
             // If room after the session leaving is now empty, delete it
             if room.leave(session_id) {
                 self.rooms.remove(key);
+                trace!(
+                    "Room {} is empty so removing it, {} room(s) left",
+                    key,
+                    self.rooms.len(),
+                );
             }
         } else {
-            warn!("User {} tried to leave non-existant room {}", session_id, key);
+            warn!(
+                "User {} tried to leave non-existant room {}",
+                session_id, key
+            );
         }
     }
     #[allow(clippy::map_entry)]
@@ -310,14 +324,23 @@ impl GameServer {
         loop {
             let id: usize = self.rng.gen();
             if !self.recipients.contains_key(&id) && id != 0 {
-                trace!("Recipient given id {}", id);
                 self.recipients.insert(id, recipient);
+                info!(
+                    "Recipient given id {}, there are now {} user(s) connected",
+                    id,
+                    self.recipients.len()
+                );
                 return id;
             }
         }
     }
     fn disconnect(&mut self, id: usize) {
         self.recipients.remove(&id);
+        trace!(
+            "Id {} disconnected, {} user(s) left",
+            id,
+            self.recipients.len()
+        );
     }
 }
 
@@ -353,6 +376,7 @@ impl Handler<ClientMessage> for GameServer {
         let type_char = if let Some(char) = msg.content.chars().next() {
             char
         } else {
+            warn!("User {} sent empty message (no type_char)", msg.session_id,);
             return;
         };
         match (msg.room, type_char) {
@@ -360,12 +384,23 @@ impl Handler<ClientMessage> for GameServer {
                 let chat: String = msg.content.chars().skip(1).collect();
                 if let Some(room) = self.rooms.get_mut(&room_key) {
                     room.handle_guess(msg.session_id, chat);
+                } else {
+                    warn!(
+                        "User {} was marked as being in non-existant room {} when sending message",
+                        msg.session_id, room_key
+                    );
                 }
             }
             (Some(room_key), 'd') => {
                 let data: String = msg.content.chars().skip(1).collect();
                 if let Some(room) = self.rooms.get(&room_key) {
                     room.handle_draw(msg.session_id, data);
+                } else {
+                    warn!(
+                        "User {} was marked as being in non-existant room {} when sending draw command",
+                        msg.session_id,
+                        room_key
+                    );
                 }
             }
             (Some(room_key), 'q') => {
@@ -377,17 +412,36 @@ impl Handler<ClientMessage> for GameServer {
                 if let [key, username] = *components {
                     if validate_username(username) {
                         self.join_room(&key, username.to_string(), msg.session_id);
+                    } else {
+                        warn!(
+                            "{} sent invalid username {} when joining room {}",
+                            msg.session_id, username, key
+                        );
                     }
+                } else {
+                    warn!(
+                        "{} tried to join room without the correct number of components (expected 2 got {})",
+                        msg.session_id,
+                        components.len(),
+                    );
                 }
             }
             (None, 'n') => {
                 let username: String = msg.content.chars().skip(1).collect();
                 if validate_username(&username) {
                     self.create_room(msg.session_id, username);
+                } else {
+                    warn!(
+                        "{} sent invalid username {} when creating room",
+                        msg.session_id, username
+                    );
                 }
             }
             (room, c) => {
-                println!("Got type_char {}, was in room {:?}", c, room);
+                warn!(
+                    "Invalid message: got type_char {}, was in room {:?}",
+                    c, room
+                );
             }
         }
     }
