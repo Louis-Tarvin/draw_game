@@ -57,6 +57,7 @@ export default function Chat({ socketManager, disabled }) {
         .map((message, index) => (<Message key={index} message={message} users={users}/>));
     const autoscrollButtonRef = useRef(null);
     const messageRef = useRef(null);
+    const chatBoxRef = useRef(null);
 
     useEffect(() => {
         const messages = messageRef.current
@@ -70,7 +71,10 @@ export default function Chat({ socketManager, disabled }) {
                 }
             }
         }
-    }, [messages, messageRef, autoscroll]);
+        if (!disabled) {
+            chatBoxRef.current.focus();
+        }
+    }, [messages, messageRef, autoscroll, disabled, chatBoxRef]);
 
     const chatSubmit = useCallback(e => {
         e.preventDefault();
@@ -84,7 +88,6 @@ export default function Chat({ socketManager, disabled }) {
     }, [setAutoscroll]);
 
     const disableAutoscroll = useCallback(() => {
-        console.log("autoscroll disabled");
         setAutoscroll(false);
     }, [setAutoscroll]);
 
@@ -100,6 +103,7 @@ export default function Chat({ socketManager, disabled }) {
             <div className="messages" onWheel={disableAutoscroll} ref={messageRef}>{messages}</div>
             <form className="chat-form" onSubmit={chatSubmit}>
                 <input type="text"
+                    ref={chatBoxRef}
                     value={disabled ? '' : message}
                     placeholder={disabled ? "Can't chat while drawing": "Make a guess"}
                     onChange={e => setMessage(e.target.value)}
