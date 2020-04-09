@@ -2,6 +2,9 @@ use actix::prelude::*;
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 
+use log::info;
+use flexi_logger::{Duplicate, Logger, Criterion, Naming, Cleanup};
+
 pub mod server;
 pub mod session;
 pub mod word_pack;
@@ -15,6 +18,18 @@ async fn main() -> std::io::Result<()> {
         .version(crate_version!())
         .author(crate_authors!())
         .get_matches();
+
+    if let Some(log_path) = matches.value_of("log") {
+        Logger::with_env_or_str("server=trace")
+            .directory(log_path)
+            .log_to_file()
+            .duplicate_to_stderr(Duplicate::Info)
+            .rotate(Criterion::Size(500_000), Naming::Timestamps, Cleanup::KeepLogAndZipFiles(5, 100))
+            .start()
+            .expect("Couldn't start logger");
+    } else {
+        env_logger::init();
+    }
 
     let port = matches.value_of("port")
         .map(|x| x.parse::<u16>().expect("Port must be an integer"))
@@ -32,7 +47,7 @@ async fn main() -> std::io::Result<()> {
         "".to_string()
     };
 
-    println!("Starting server at 0.0.0.0:{} {}", port, serve_dir_msg);
+    info!("Starting server at 0.0.0.0:{} {}", port, serve_dir_msg);
 
     HttpServer::new(move || {
         let app = App::new()

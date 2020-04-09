@@ -18,3 +18,8 @@ args:
         takes_value: true
         help: |
             The path to the word pack, defaults to `words.txt`
+    - log:
+        short: l
+        takes_value: true
+        help: |
+            The path to the directory of log files.

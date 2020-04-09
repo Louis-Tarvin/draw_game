@@ -3,6 +3,8 @@ use actix_web_actors::ws;
 
 use crate::server::*;
 
+use log::{warn, error};
+
 pub struct Session {
     pub id: usize,
     pub game_server: Addr<GameServer>,
@@ -47,7 +49,7 @@ impl Handler<Event> for Session {
 
     fn handle(&mut self, event: Event, ctx: &mut Self::Context) {
         if self.id == 0 {
-            println!("recieved message, but id was 0");
+            error!("server wants to send event but id was 0 (uninitialised), this is an internal error");
             return;
         }
         let message = match event {
@@ -81,7 +83,8 @@ impl Handler<Event> for Session {
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         let msg = match msg {
-            Err(_) => {
+            Err(err) => {
+                error!("Websocket result (uid={}) was an error {:?}", self.id, err);
                 ctx.stop();
                 return;
             }
@@ -94,20 +97,24 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for Session {
             }
             ws::Message::Pong(_) => {}
             ws::Message::Text(text) => {
-                self.game_server.do_send(ClientMessage {
-                    session_id: self.id,
-                    content: text,
-                    room: self.room.clone(),
-                });
+                if self.id != 0 {
+                    self.game_server.do_send(ClientMessage {
+                        session_id: self.id,
+                        content: text,
+                        room: self.room.clone(),
+                    });
+                } else {
+                    warn!("Client sent message when it's id was 0");
+                }
             }
             ws::Message::Close(_) => {
                 ctx.stop();
             }
             ws::Message::Continuation(_) => {
-                println!("Client tried to send contintuation message");
+                warn!("Client tried to send contintuation message");
             }
             ws::Message::Binary(_) => {
-                println!("Client tried to send binary message");
+                warn!("Client tried to send binary message");
             }
             ws::Message::Nop => {}
         }
