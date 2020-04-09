@@ -259,7 +259,7 @@ impl GameServer {
                 if let Some(recipient) = self.recipients.get(&session_id) {
                     let room = Room::new(
                         key.clone(),
-                        Arc::clone(&self.word_list),
+                        Arc::clone(&self.word_pack),
                         session_id,
                         recipient.clone(),
                         username.clone(),
