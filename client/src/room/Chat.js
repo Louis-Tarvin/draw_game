@@ -60,7 +60,7 @@ export default function Chat({ socketManager, disabled }) {
     const chatBoxRef = useRef(null);
 
     useEffect(() => {
-        const messages = messageRef.current
+        const messages = messageRef.current;
         if (messages) {
             const lastMessage = messages.lastChild;
             if (autoscroll) {
@@ -88,18 +88,27 @@ export default function Chat({ socketManager, disabled }) {
     }, [setAutoscroll]);
 
     const disableAutoscroll = useCallback(() => {
-        setAutoscroll(false);
-    }, [setAutoscroll]);
+        // Checking if last message is visible
+        const lastMessage = messageRef.current.lastChild;
+        const rect = lastMessage.getBoundingClientRect();
+        const isNotVisible = (rect.top - messageRef.current.getBoundingClientRect().bottom >= 0);
+        console.log(isNotVisible);
+        console.log(rect.top);
+        console.log(messageRef.current.getBoundingClientRect().bottom);
+        if (isNotVisible) {
+            setAutoscroll(false);
+        }
+    }, [setAutoscroll, messages, messageRef]);
 
-    const autoscrollButton = autoscroll ? null : <input type="button"
-        value="Resume Auto-scroll"
-        className="autoscroll-button"
-        onClick={enableAutoscroll}
-        ref={autoscrollButtonRef} />
+    const autoscrollButtonClass = autoscroll ? "autoscroll-button invisible" : "autoscroll-button"
 
     return (
         <div className="chat-area">
-            {autoscrollButton}
+            <input type="button"
+                value="Resume Auto-scroll"
+                className={autoscrollButtonClass}
+                onClick={enableAutoscroll}
+                ref={autoscrollButtonRef} />
             <div className="messages" onWheel={disableAutoscroll} ref={messageRef}>{messages}</div>
             <form className="chat-form" onSubmit={chatSubmit}>
                 <input type="text"

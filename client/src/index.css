@@ -10,3 +10,11 @@ body {
 * {
     margin: 0;
 }
+
+.hide {
+    display: none;
+}
+
+.invisible {
+    visibility: hidden;
+}
