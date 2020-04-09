@@ -78,6 +78,7 @@ canvas {
 .messages {
     height: 500px;
     overflow-y: scroll;
+    scroll-behavior: smooth;
 }
 
 .username {

@@ -59,16 +59,15 @@ export default function Chat({ socketManager, disabled }) {
     const messageRef = useRef(null);
     const chatBoxRef = useRef(null);
 
+    // Since this effect has a dependency on messages this will run whenever a new message comes in
     useEffect(() => {
-        const messages = messageRef.current;
-        if (messages) {
-            const lastMessage = messages.lastChild;
+        const messagesElement = messageRef.current;
+        if (messagesElement) {
             if (autoscroll) {
-                if (lastMessage.scrollIntoView) {
-                    lastMessage.scrollIntoView({ behavior: 'smooth' });
-                } else {
-                    messages.scrollTop = messages.scrollHeight;
-                }
+                // Simply scroll to the bottom, my avoiding using scrollIntoView
+                // this prevents the whole browser window moving down as this only
+                // scrolls within the messages element and nothing else.
+                messagesElement.scrollTop = messagesElement.scrollHeight - messagesElement.clientHeight
             }
         }
         if (!disabled) {
