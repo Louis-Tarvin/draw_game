@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 function Message({ message, users }) {
@@ -51,9 +51,26 @@ function Message({ message, users }) {
 
 export default function Chat({ socketManager, disabled }) {
     const [message, setMessage] = useState('');
+    const [autoscroll, setAutoscroll] = useState(true);
     const users = useSelector(state => state.room.users);
     const messages = useSelector(state => state.room.messages)
         .map((message, index) => (<Message key={index} message={message} users={users}/>));
+    const autoscrollButtonRef = useRef(null);
+    const messageRef = useRef(null);
+
+    useEffect(() => {
+        const messages = messageRef.current
+        if (messages) {
+            const lastMessage = messages.lastChild;
+            if (autoscroll) {
+                if (lastMessage.scrollIntoView) {
+                    lastMessage.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    messages.scrollTop = messages.scrollHeight;
+                }
+            }
+        }
+    }, [messages, messageRef]);
 
     const chatSubmit = useCallback(e => {
         e.preventDefault();
@@ -62,12 +79,28 @@ export default function Chat({ socketManager, disabled }) {
         setMessage('');
     }, [message, socketManager]);
 
+    const enableAutoscroll = useCallback(() => {
+        setAutoscroll(true);
+    }, [setAutoscroll]);
+
+    const disableAutoscroll = useCallback(() => {
+        console.log("autoscroll disabled");
+        setAutoscroll(false);
+    }, [setAutoscroll]);
+
+    const autoscrollButton = autoscroll ? null : <input type="button"
+        value="Resume Auto-scroll"
+        className="autoscroll-button"
+        onClick={enableAutoscroll}
+        ref={autoscrollButtonRef} />
+
     return (
         <div className="chat-area">
-            <div className="messages">{messages}</div>
+            {autoscrollButton}
+            <div className="messages" onWheel={disableAutoscroll} ref={messageRef}>{messages}</div>
             <form className="chat-form" onSubmit={chatSubmit}>
                 <input type="text"
-                    value={message}
+                    value={disabled ? '' : message}
                     placeholder={disabled ? "Can't chat while drawing": "Make a guess"}
                     onChange={e => setMessage(e.target.value)}
                     disabled={disabled}/>
