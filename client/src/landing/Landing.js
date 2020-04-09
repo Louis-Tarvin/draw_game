@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import classNames from 'classnames';
 import useInput from 'common/useInput';
 
@@ -36,8 +36,13 @@ function EnterRoom({ username, socketManager, enabled }) {
 }
 
 export default function Landing({ socketManager }) {
-    const [username, usernameField] = useInput({ placeholder: 'Username' });
+    const usernameInputRef = useRef(null)
+    const [username, usernameField] = useInput({ placeholder: 'Username', ref: usernameInputRef });
     const usernameIsValid = checkUsername(username);
+
+    useEffect(() => {
+        usernameInputRef.current.focus();
+    }, [usernameInputRef]);
 
     return (
         <div className="landing-wrapper">

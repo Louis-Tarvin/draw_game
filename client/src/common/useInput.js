@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function useInput({ defaultValue = '', placeholder = '', type = 'text', properties = {} } = {}) {
+export default function useInput({ defaultValue = '', placeholder = '', type = 'text', ref = null, properties = {} } = {}) {
   let [value, setValue] = useState(defaultValue);
 
   const field = <input
@@ -8,6 +8,7 @@ export default function useInput({ defaultValue = '', placeholder = '', type = '
     type={type}
     placeholder={placeholder}
     onChange={e => setValue(e.target.value)}
+    ref={ref}
     {...properties} />;
 
   return [value, field];

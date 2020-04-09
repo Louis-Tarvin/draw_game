@@ -70,7 +70,7 @@ export default function Chat({ socketManager, disabled }) {
                 }
             }
         }
-    }, [messages, messageRef]);
+    }, [messages, messageRef, autoscroll]);
 
     const chatSubmit = useCallback(e => {
         e.preventDefault();
