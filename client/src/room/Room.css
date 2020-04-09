@@ -51,6 +51,10 @@ canvas {
     display: inline-block;
 }
 
+.chat-area {
+    position: relative;
+}
+
 .room-status-bar {
     display: flex;
     flex-direction: row;
@@ -74,6 +78,7 @@ canvas {
 .messages {
     height: 500px;
     overflow-y: scroll;
+    scroll-behavior: smooth;
 }
 
 .username {
@@ -131,4 +136,22 @@ input[type="submit"] {
     font-size: 15px;
 
     padding: 5px;
+}
+
+.autoscroll-button {
+    border: 0;
+    border-radius: 5px;
+
+    background-color: #9B59B6;
+    color: white;
+
+    box-shadow: rgba(0, 0, 0, 0.25) 0 0 4px;
+
+    cursor: pointer;
+
+    font-family: 'Montserrat SemiBold';
+    font-size: 15px;
+
+    padding: 5px;
+    width: 100%;
 }
