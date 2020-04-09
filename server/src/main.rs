@@ -3,6 +3,7 @@ use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 
 use log::info;
+use flexi_logger::{Duplicate, Logger, Criterion, Naming, Cleanup};
 
 pub mod server;
 pub mod session;
@@ -11,13 +12,23 @@ use clap::{crate_authors, crate_version, load_yaml};
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    env_logger::init();
-
     let yaml = load_yaml!("cli.yml");
     let matches = clap::App::from(yaml)
         .version(crate_version!())
         .author(crate_authors!())
         .get_matches();
+
+    if let Some(log_path) = matches.value_of("log") {
+        Logger::with_env_or_str("server=trace")
+            .directory(log_path)
+            .log_to_file()
+            .duplicate_to_stderr(Duplicate::Info)
+            .rotate(Criterion::Size(500_000), Naming::Timestamps, Cleanup::KeepLogAndZipFiles(5, 100))
+            .start()
+            .expect("Couldn't start logger");
+    } else {
+        env_logger::init();
+    }
 
     let port = matches.value_of("port")
         .map(|x| x.parse::<u16>().expect("Port must be an integer"))

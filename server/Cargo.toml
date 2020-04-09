@@ -13,6 +13,7 @@ actix-web-actors = "2.0"
 actix-rt = "1.0.0"
 rand = "0.7"
 actix-files = "0.2.1"
-clap = {version = "2.33.0", features = ["yaml"]}
+clap = { version = "2.33.0", features = ["yaml"] }
 log = "0.4"
 env_logger = "0.7"
+flexi_logger = { version = "0.15", features = ["ziplogs"] }

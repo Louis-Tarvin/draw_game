@@ -13,3 +13,8 @@ args:
         takes_value: true
         help: |
             The port for the server defaults to 3007.
+    - log:
+        short: l
+        takes_value: true
+        help: |
+            The path to the directory of log files.
