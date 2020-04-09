@@ -92,13 +92,10 @@ export default function Chat({ socketManager, disabled }) {
         const lastMessage = messageRef.current.lastChild;
         const rect = lastMessage.getBoundingClientRect();
         const isNotVisible = (rect.top - messageRef.current.getBoundingClientRect().bottom >= 0);
-        console.log(isNotVisible);
-        console.log(rect.top);
-        console.log(messageRef.current.getBoundingClientRect().bottom);
         if (isNotVisible) {
             setAutoscroll(false);
         }
-    }, [setAutoscroll, messages, messageRef]);
+    }, [setAutoscroll, messageRef]);
 
     const autoscrollButtonClass = autoscroll ? "autoscroll-button invisible" : "autoscroll-button"
 
