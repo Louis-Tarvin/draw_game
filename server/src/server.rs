@@ -3,6 +3,8 @@ use rand::{distributions::Alphanumeric, prelude::*, rngs::ThreadRng};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
+use crate::word_pack::WordPack;
+
 #[derive(Message, Clone)]
 #[rtype(result = "()")]
 pub enum Event {
@@ -30,7 +32,7 @@ pub struct Room {
     key: String,
     occupants: HashMap<usize, (Recipient<Event>, String)>,
     current_leader: usize,
-    word_list: Arc<Vec<String>>,
+    word_pack: Arc<WordPack>,
     word: usize,
     rng: ThreadRng,
     queue: VecDeque<usize>,
@@ -40,7 +42,7 @@ pub struct Room {
 impl Room {
     fn new(
         key: String,
-        word_list: Arc<Vec<String>>,
+        word_pack: Arc<WordPack>,
         session_id: usize,
         recipient: Recipient<Event>,
         username: String,
@@ -53,8 +55,8 @@ impl Room {
             key: key.clone(),
             occupants,
             current_leader: 0,
-            max_excluded_words: word_list.len() / 10,
-            word_list,
+            max_excluded_words: word_pack.list_len() / 2,
+            word_pack,
             word: 0,
             rng: ThreadRng::default(),
             queue,
@@ -82,13 +84,13 @@ impl Room {
 
     fn choose_new_word(&mut self) {
         loop {
-            let word_index = self.rng.gen_range(0, self.word_list.len());
+            let word_index = self.rng.gen_range(0, self.word_pack.list_len());
             if !self.excluded_words.contains(&word_index) {
-                self.excluded_words.push_back(self.word);
-                self.word = word_index;
-                if self.excluded_words.len() > self.max_excluded_words {
+                if self.excluded_words.len() >= self.max_excluded_words {
                     self.excluded_words.pop_front();
                 }
+                self.excluded_words.push_back(self.word);
+                self.word = word_index;
                 break;
             }
         }
@@ -135,7 +137,7 @@ impl Room {
             } else {
                 self.direct_message(
                     recipient,
-                    Event::NewLeader(self.word_list[self.word].clone()),
+                    Event::NewLeader(self.word_pack.get_word(self.word).clone()),
                 );
             }
         }
@@ -144,8 +146,8 @@ impl Room {
     fn handle_guess(&mut self, session_id: usize, message: String) {
         if session_id != self.current_leader {
             self.broadcast_event(Event::Message(session_id, message.clone()));
-            if message.trim().to_lowercase() == self.word_list[self.word] {
-                self.broadcast_event(Event::Winner(session_id, self.word_list[self.word].clone()));
+            if self.word_pack.word_matches(self.word, &message.trim().to_lowercase()) {
+                self.broadcast_event(Event::Winner(session_id, self.word_pack.get_word(self.word).clone()));
                 self.new_round();
             }
         }
@@ -180,27 +182,22 @@ impl Room {
     }
 }
 
-#[derive(Default)]
 pub struct GameServer {
     rooms: HashMap<String, Room>,
     recipients: HashMap<usize, Recipient<Event>>,
     rng: ThreadRng,
-    word_list: Arc<Vec<String>>,
+    word_pack: Arc<WordPack>,
 }
 
 impl GameServer {
-    pub fn new() -> Self {
-        let word_list = include_str!("words.txt");
-        let word_list: Vec<_> = word_list
-            .split('\n')
-            .map(|word| word.trim().to_string())
-            .filter(|word| !word.is_empty())
-            .collect();
+    pub fn new<P: AsRef<std::path::Path>>(word_pack_path: P) -> Self {
+        let word_pack = WordPack::new(&word_pack_path).expect("Error loading the word pack");
+
         GameServer {
             rooms: HashMap::new(),
             recipients: HashMap::new(),
             rng: ThreadRng::default(),
-            word_list: Arc::new(word_list),
+            word_pack: Arc::new(word_pack),
         }
     }
     fn create_room(&mut self, session_id: usize, username: String) {
@@ -216,7 +213,7 @@ impl GameServer {
                     .expect("session_id did not exist");
                 let room = Room::new(
                     key.clone(),
-                    Arc::clone(&self.word_list),
+                    Arc::clone(&self.word_pack),
                     session_id,
                     recipient.clone(),
                     username,
