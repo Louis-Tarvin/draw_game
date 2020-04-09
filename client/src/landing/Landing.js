@@ -35,7 +35,7 @@ function EnterRoom({ username, socketManager, enabled }) {
     );
 }
 
-export default function Landing({ socketManager }) {
+export default function Landing({ socketManager, isHidden }) {
     const usernameInputRef = useRef(null)
     const [username, usernameField] = useInput({ placeholder: 'Username', ref: usernameInputRef });
     const usernameIsValid = checkUsername(username);
@@ -44,8 +44,10 @@ export default function Landing({ socketManager }) {
         usernameInputRef.current.focus();
     }, [usernameInputRef]);
 
+    const wrapperClass = isHidden? "hide landing-wrapper": "landing-wrapper";
+
     return (
-        <div className="landing-wrapper">
+        <div className={wrapperClass}>
             <div className="landing">
                 <h2>Enter a username</h2>
                 {usernameField}

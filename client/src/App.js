@@ -10,10 +10,11 @@ import Room from './room/Room';
 function App({ socketManager }) {
     const inRoom = !!useSelector(state => state.room);
 
-    const view = inRoom? (<Room socketManager={socketManager} />): (<Landing socketManager={socketManager} />);
+    const view = inRoom? (<Room socketManager={socketManager} />): null;
 
     return (
         <div className="App">
+            <Landing socketManager={socketManager} isHidden={inRoom} />
             {view}
         </div>
     );
