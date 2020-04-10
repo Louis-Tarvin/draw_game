@@ -78,7 +78,10 @@ export default function Chat({ socketManager, disabled }) {
     const chatSubmit = useCallback(e => {
         e.preventDefault();
 
-        socketManager.sendChat(message);
+        if (message !== '') {
+            socketManager.sendChat(message);
+        }
+
         setMessage('');
     }, [message, socketManager]);
 

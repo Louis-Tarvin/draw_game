@@ -388,6 +388,12 @@ impl Handler<ClientMessage> for GameServer {
         match (msg.room, type_char) {
             (Some(room_key), 'm') => {
                 let chat: String = msg.content.chars().skip(1).collect();
+
+                if chat.is_empty() {
+                    warn!("User {} tried to send empty message in room {}", msg.session_id, room_key);
+                    return;
+                }
+
                 if let Some(room) = self.rooms.get_mut(&room_key) {
                     room.handle_guess(msg.session_id, chat);
                 } else {
