@@ -95,7 +95,7 @@ impl Room {
                 if self.excluded_words.len() >= self.max_excluded_words {
                     self.excluded_words.pop_front();
                 }
-                self.excluded_words.push_back(self.word);
+                self.excluded_words.push_back(word_index);
                 self.word = word_index;
                 break;
             }
