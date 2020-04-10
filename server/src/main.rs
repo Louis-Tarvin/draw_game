@@ -2,8 +2,8 @@ use actix::prelude::*;
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 
+use flexi_logger::{opt_format, Cleanup, Criterion, Duplicate, Logger, Naming};
 use log::info;
-use flexi_logger::{Duplicate, Logger, Criterion, Naming, Cleanup};
 
 pub mod server;
 pub mod session;
@@ -24,14 +24,20 @@ async fn main() -> std::io::Result<()> {
             .directory(log_path)
             .log_to_file()
             .duplicate_to_stderr(Duplicate::Info)
-            .rotate(Criterion::Size(500_000), Naming::Timestamps, Cleanup::KeepLogAndZipFiles(5, 100))
+            .rotate(
+                Criterion::Size(500_000),
+                Naming::Timestamps,
+                Cleanup::KeepLogAndZipFiles(5, 100),
+            )
+            .format(opt_format)
             .start()
             .expect("Couldn't start logger");
     } else {
         env_logger::init();
     }
 
-    let port = matches.value_of("port")
+    let port = matches
+        .value_of("port")
         .map(|x| x.parse::<u16>().expect("Port must be an integer"))
         .unwrap_or(3007);
 
@@ -67,11 +73,15 @@ async fn main() -> std::io::Result<()> {
 async fn socket_route(
     req: HttpRequest,
     stream: web::Payload,
-    game_server: web::Data<Addr<server::GameServer>>
+    game_server: web::Data<Addr<server::GameServer>>,
 ) -> Result<HttpResponse, Error> {
-    ws::start(session::Session {
-        id: 0,
-        game_server: game_server.get_ref().clone(),
-        room: None,
-    }, &req, stream)
+    ws::start(
+        session::Session {
+            id: 0,
+            game_server: game_server.get_ref().clone(),
+            room: None,
+        },
+        &req,
+        stream,
+    )
 }
