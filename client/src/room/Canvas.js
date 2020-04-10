@@ -52,7 +52,7 @@ export default function Canvas({ socketManager, isLeader }) {
             .map(x => Math.round(x))
             .map(x => x < 0? 0: x)
         );
-    })
+    }, [drawLine])
 
     const clearCanvas = useCallback(() => {
         if (context)
