@@ -23,7 +23,7 @@ export default function Canvas({ socketManager, isLeader }) {
     const [prevX, setPrevX] = useState(0);
     const [prevY, setPrevY] = useState(0);
     // eslint-disable-next-line
-    const [penSize, setPenSize] = useState(3);
+    const [penSize, setPenSize] = useState(2);
 
     const drawLine = useCallback((startX, startY, endX, endY, penSize) => {
         if (!context) {
@@ -43,9 +43,16 @@ export default function Canvas({ socketManager, isLeader }) {
         context.closePath();
 
         if (isLeader) {
-            socketManager.sendDraw([startX, startY, endX, endY, penSize].map(x => Math.round(x)));
+            socketManager.sendDraw([startX, startY, endX, endY, penSize]);
         }
     }, [context, socketManager, isLeader]);
+
+    const drawCleanLine = useCallback((startX, startY, endX, endY, penSize) => {
+        drawLine.apply(null, [startX, startY, endX, endY, penSize]
+            .map(x => Math.round(x))
+            .map(x => x < 0? 0: x)
+        );
+    })
 
     const clearCanvas = useCallback(() => {
         if (context)
@@ -55,14 +62,14 @@ export default function Canvas({ socketManager, isLeader }) {
     useEffect(() => {
         socketManager.setDrawHandler((startX, startY, endX, endY, penSize) => {
             if (!isLeader) {
-                drawLine(startX, startY, endX, endY, penSize);
+                drawCleanLine(startX, startY, endX, endY, penSize);
             }
         });
 
         return () => {
             socketManager.setDrawHandler(null);
         }
-    }, [drawLine, socketManager, isLeader]);
+    }, [drawCleanLine, socketManager, isLeader]);
 
     // Consider whether this is the correct control flow, feels a bit hacky
     useEffect(() => {
@@ -85,12 +92,12 @@ export default function Canvas({ socketManager, isLeader }) {
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
-            drawLine(x, y, prevX, prevY, penSize);
+            drawCleanLine(x, y, prevX, prevY, penSize);
 
             setPrevX(x);
             setPrevY(y);
         }
-    }, [isLeader, penDown, canvas, prevX, prevY, penSize, drawLine, penLeft]);
+    }, [isLeader, penDown, canvas, prevX, prevY, penSize, drawCleanLine, penLeft]);
 
     const mouseDown = useCallback(e => {
         if (isLeader && canvas) {
@@ -99,19 +106,19 @@ export default function Canvas({ socketManager, isLeader }) {
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            drawLine(x, y, x, y, penSize);
+            drawCleanLine(x, y, x, y, penSize);
 
             setPrevX(x);
             setPrevY(y);
         }
-    }, [isLeader, canvas, drawLine, penSize]);
+    }, [isLeader, canvas, drawCleanLine, penSize]);
 
     const mouseEnter = useCallback(e => {
         if (isLeader && penDown && canvas) {
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            drawLine(x, y, x, y, penSize);
+            drawCleanLine(x, y, x, y, penSize);
 
             setPrevX(x);
             setPrevY(y);
@@ -119,7 +126,7 @@ export default function Canvas({ socketManager, isLeader }) {
             // Enable normal drawing
             setPenLeft(false);
         }
-    }, [isLeader, canvas, drawLine, penSize, penDown]);
+    }, [isLeader, canvas, drawCleanLine, penSize, penDown]);
 
     // When the mouse leaves mark it as such and complete the line to the edge
     const mouseLeft = useCallback(e => {
@@ -129,9 +136,9 @@ export default function Canvas({ socketManager, isLeader }) {
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
-            drawLine(x, y, prevX, prevY, penSize);
+            drawCleanLine(x, y, prevX, prevY, penSize);
         }
-    }, [isLeader, penDown, canvas, drawLine, penSize, prevX, prevY]);
+    }, [isLeader, penDown, canvas, drawCleanLine, penSize, prevX, prevY]);
 
     return (
         <canvas
