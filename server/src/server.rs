@@ -145,7 +145,11 @@ impl Room {
         self.choose_new_word();
         while let Some(new_leader) = self.queue.pop_front() {
             if self.occupants.get(&new_leader).is_some() {
-                self.queue.push_back(self.current_leader);
+                if !self.queue.contains(&self.current_leader) {
+                    self.queue.push_back(self.current_leader);
+                } else {
+                    warn!("detected bug tried to queue user {} who was already in the user queue in room {}", self.current_leader, self.key);
+                }
                 self.current_leader = new_leader;
                 break;
             }
