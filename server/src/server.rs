@@ -242,7 +242,7 @@ pub struct GameServer {
 }
 
 impl GameServer {
-    pub fn new<P: AsRef<std::path::Path>>(word_pack_path: P) -> Self {
+    pub fn new<P: std::fmt::Debug + AsRef<std::path::Path>>(word_pack_path: P) -> Self {
         let word_pack = WordPack::new(&word_pack_path).expect("Error loading the word pack");
 
         info!(
