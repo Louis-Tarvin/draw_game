@@ -103,6 +103,11 @@ impl Room {
     }
 
     fn join(&mut self, session_id: usize, recipient: Recipient<Event>, username: String) {
+        if self.occupants.get(&session_id).is_some() {
+            warn!("User {} ({}) is already in room {}", username, session_id, self.key);
+            return;
+        }
+
         trace!("{} ({}) joining room {}", username, session_id, self.key);
         self.broadcast_event(Event::UserJoin(session_id, username.clone()));
         self.occupants

@@ -19,7 +19,6 @@ sibling
 pea
 pacman, pac man
 toilet
-mirror
 window
 pizza
 iceberg
@@ -81,7 +80,7 @@ hot
 cold
 delivery
 rainbow
-hairband
+hairband, hair band
 valve
 rollercoaster
 hiking
