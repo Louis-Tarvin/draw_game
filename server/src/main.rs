@@ -8,6 +8,11 @@ use log::info;
 pub mod server;
 pub mod session;
 pub mod word_pack;
+pub mod room;
+
+pub use server::{GameServer, Event, ClientMessage};
+pub use word_pack::WordPack;
+pub use room::Room;
 
 use clap::{crate_authors, crate_version, load_yaml};
 
@@ -73,7 +78,7 @@ async fn main() -> std::io::Result<()> {
 async fn socket_route(
     req: HttpRequest,
     stream: web::Payload,
-    game_server: web::Data<Addr<server::GameServer>>,
+    game_server: web::Data<Addr<GameServer>>,
 ) -> Result<HttpResponse, Error> {
     ws::start(
         session::Session {
