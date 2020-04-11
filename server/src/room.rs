@@ -2,10 +2,10 @@ use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
 use actix::prelude::*;
-use rand::prelude::*;
 use log::{trace, warn};
+use rand::prelude::*;
 
-use crate::{WordPack, Event};
+use crate::{Event, WordPack};
 
 pub struct Room {
     key: String,
@@ -83,7 +83,10 @@ impl Room {
 
     pub fn join(&mut self, session_id: usize, recipient: Recipient<Event>, username: String) {
         if self.occupants.get(&session_id).is_some() {
-            warn!("User {} ({}) is already in room {}", username, session_id, self.key);
+            warn!(
+                "User {} ({}) is already in room {}",
+                username, session_id, self.key
+            );
             return;
         }
 
@@ -101,7 +104,11 @@ impl Room {
     }
 
     fn send_draw_history(&self, session_id: usize, recipient: &Recipient<Event>) {
-        trace!("Sending draw history of {} commands to {}", self.draw_history.len(), session_id);
+        trace!(
+            "Sending draw history of {} commands to {}",
+            self.draw_history.len(),
+            session_id
+        );
         for (x1, x2, y1, y2, pen_size) in &self.draw_history {
             self.direct_message(recipient, Event::Draw(*x1, *x2, *y1, *y2, *pen_size));
         }
@@ -169,8 +176,14 @@ impl Room {
     pub fn handle_guess(&mut self, session_id: usize, message: String) {
         if session_id != self.current_leader {
             self.broadcast_event(Event::Message(session_id, message.clone()));
-            if self.word_pack.word_matches(self.word, &message.trim().to_lowercase()) {
-                self.broadcast_event(Event::Winner(session_id, self.word_pack.get_word(self.word).clone()));
+            if self
+                .word_pack
+                .word_matches(self.word, &message.trim().to_lowercase())
+            {
+                self.broadcast_event(Event::Winner(
+                    session_id,
+                    self.word_pack.get_word(self.word).clone(),
+                ));
                 self.new_round();
             }
         } else {

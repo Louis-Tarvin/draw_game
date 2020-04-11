@@ -5,14 +5,14 @@ use actix_web_actors::ws;
 use flexi_logger::{opt_format, Cleanup, Criterion, Duplicate, Logger, Naming};
 use log::info;
 
+pub mod room;
 pub mod server;
 pub mod session;
 pub mod word_pack;
-pub mod room;
 
-pub use server::{GameServer, Event, ClientMessage};
-pub use word_pack::WordPack;
 pub use room::Room;
+pub use server::{ClientMessage, Event, GameServer};
+pub use word_pack::WordPack;
 
 use clap::{crate_authors, crate_version, load_yaml};
 

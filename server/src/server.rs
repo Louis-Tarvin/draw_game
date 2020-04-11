@@ -3,7 +3,7 @@ use rand::{distributions::Alphanumeric, prelude::*, rngs::ThreadRng};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::{ WordPack, Room };
+use crate::{Room, WordPack};
 
 use log::{debug, info, trace, warn};
 
@@ -186,7 +186,10 @@ impl Handler<ClientMessage> for GameServer {
                 let chat: String = msg.content.chars().skip(1).collect();
 
                 if chat.is_empty() {
-                    warn!("User {} tried to send empty message in room {}", msg.session_id, room_key);
+                    warn!(
+                        "User {} tried to send empty message in room {}",
+                        msg.session_id, room_key
+                    );
                     return;
                 }
 

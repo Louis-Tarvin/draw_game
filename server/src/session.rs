@@ -3,7 +3,7 @@ use actix_web_actors::ws;
 
 use crate::server::*;
 
-use log::{warn, error};
+use log::{error, warn};
 
 pub struct Session {
     pub id: usize,
@@ -27,7 +27,7 @@ impl Actor for Session {
                     Ok(session_id) => {
                         act.id = session_id;
                         ctx.text(format!("c{}", session_id));
-                    },
+                    }
                     _ => ctx.stop(),
                 }
                 fut::ready(())

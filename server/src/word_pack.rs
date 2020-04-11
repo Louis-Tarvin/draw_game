@@ -1,6 +1,6 @@
-use std::path::Path;
 use std::fs::File;
-use std::io::{Result, Read};
+use std::io::{Read, Result};
+use std::path::Path;
 
 use log::warn;
 
@@ -18,7 +18,10 @@ impl WordPack {
         let mut list = Vec::new();
 
         for line in contents.split_terminator('\n') {
-            let mut parts = line.split(',').map(|part| part.trim().to_lowercase()).filter(|part| !part.is_empty());
+            let mut parts = line
+                .split(',')
+                .map(|part| part.trim().to_lowercase())
+                .filter(|part| !part.is_empty());
             if let Some(word) = parts.next() {
                 if list.iter().any(|(main, _)| main == &word) {
                     warn!("Word pack {:?} contains duplicate entry `{}`", path, word);
