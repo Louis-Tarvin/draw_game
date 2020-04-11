@@ -18,6 +18,11 @@ function stateManager(state = {}, action) {
             newState = { ...state };
             newState.socketState = 'reconnecting';
             return newState;
+        case 'SOCKET_RECONNECTION_FAILED':
+            console.debug('Failed to reconnect');
+            newState = { ...state };
+            newState.socketState = 'failed';
+            return newState;
         case 'JOINED_ROOM':
             console.debug('Joined room', action.roomCode, 'with users', action.users);
             let messages = [{ type: 'initial_join', roomCode: action.roomCode, users: action.users }];

@@ -14,3 +14,16 @@
     text-align: center;
     padding: 10px;
 }
+
+.reconnect-form {
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.reconnect-form input[type="submit"] {
+    background-color: white;
+    color: #E74C3C;
+
+    font-size: 15px;
+    padding: 0 10px;
+}

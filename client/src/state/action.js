@@ -10,6 +10,10 @@ export function socketReconnecting() {
     return { type: 'SOCKET_RECONNECTING' }
 }
 
+export function socketReconnectionFailed() {
+    return { type: 'SOCKET_RECONNECTION_FAILED' }
+}
+
 export function joinedRoom(roomCode, users) {
     return { type: 'JOINED_ROOM', roomCode, users };
 }
