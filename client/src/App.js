@@ -12,8 +12,17 @@ function App({ socketManager }) {
     const socketState = useSelector(state => state.socketState);
     // const socketState = 'disconnected'
 
-    const connectionBar = socketState === 'disconnected'?
-        (<div className="connection-bar">There seems to be a connection issue... Attempting to reconnect in 3 seconds</div>): null;
+    var connectionBar;
+    switch (socketState) {
+        case 'disconnected':
+            connectionBar = (<div className="connection-bar">There seems to be a connection issue... Attempting to reconnect in 3 seconds</div>)
+            break;
+        case 'reconnecting':
+            connectionBar = (<div className="connection-bar">Attempting to reconnect...</div>)
+            break;
+        default:
+            connectionBar = null;
+    }
 
     const view = inRoom? (<Room socketManager={socketManager} />): null;
 

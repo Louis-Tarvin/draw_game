@@ -1,6 +1,7 @@
 import {
     socketConnected,
     socketDisconnected,
+    socketReconnecting,
     joinedRoom,
     becomeLeader,
     becomeGuesser,
@@ -78,7 +79,7 @@ export default class SocketManager {
         console.error('websocket connection closed');
         this.store.dispatch(socketDisconnected());
         setTimeout(function() {
-            console.log('attempting to reconnect');
+            this.store.dispatch(socketReconnecting());
             this.connect();
         }.bind(this), 3000)
     }
