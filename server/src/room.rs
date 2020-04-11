@@ -17,6 +17,7 @@ pub struct Room {
     queue: VecDeque<usize>,
     excluded_words: VecDeque<usize>,
     max_excluded_words: usize,
+    draw_history: Vec<(u32, u32, u32, u32, u32)>,
 }
 impl Room {
     pub fn new(
@@ -40,6 +41,7 @@ impl Room {
             rng: ThreadRng::default(),
             queue,
             excluded_words: VecDeque::new(),
+            draw_history: Vec::new(),
         };
         room.direct_message(
             &recipient,
@@ -94,7 +96,15 @@ impl Room {
             Event::EnterRoom(self.key.to_string(), self.get_user_list()),
         );
         self.direct_message(&recipient, Event::NewRound(self.current_leader));
+        self.send_draw_history(session_id, &recipient);
         self.queue.push_back(session_id);
+    }
+
+    fn send_draw_history(&self, session_id: usize, recipient: &Recipient<Event>) {
+        trace!("Sending draw history of {} commands to {}", self.draw_history.len(), session_id);
+        for (x1, x2, y1, y2, pen_size) in &self.draw_history {
+            self.direct_message(recipient, Event::Draw(*x1, *x2, *y1, *y2, *pen_size));
+        }
     }
 
     pub fn leave(&mut self, session_id: usize) -> bool {
@@ -125,6 +135,7 @@ impl Room {
 
     fn new_round(&mut self) {
         self.choose_new_word();
+        self.draw_history.clear();
         while let Some(new_leader) = self.queue.pop_front() {
             if self.occupants.get(&new_leader).is_some() {
                 if !self.queue.contains(&self.current_leader) {
@@ -170,7 +181,7 @@ impl Room {
         }
     }
 
-    pub fn handle_draw(&self, session_id: usize, data: String) {
+    pub fn handle_draw(&mut self, session_id: usize, data: String) {
         if self.current_leader != session_id {
             warn!(
                 "Uid {} in room {} tried to send draw command when {} was leader",
@@ -187,6 +198,7 @@ impl Room {
             if let [x1, x2, y1, y2, pen_size] = *content {
                 // TODO: check bounds of numbers
                 self.broadcast_event(Event::Draw(x1, x2, y1, y2, pen_size));
+                self.draw_history.push((x1, x2, y1, y2, pen_size));
             } else {
                 warn!(
                     "{} in room {} sent a draw command with not enough parts (expected 5 got {})",

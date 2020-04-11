@@ -201,7 +201,7 @@ impl Handler<ClientMessage> for GameServer {
             }
             (Some(room_key), 'd') => {
                 let data: String = msg.content.chars().skip(1).collect();
-                if let Some(room) = self.rooms.get(&room_key) {
+                if let Some(room) = self.rooms.get_mut(&room_key) {
                     room.handle_draw(msg.session_id, data);
                 } else {
                     warn!(
