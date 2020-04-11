@@ -1,5 +1,6 @@
 import {
     socketConnected,
+    socketDisconnected,
     joinedRoom,
     becomeLeader,
     becomeGuesser,
@@ -11,11 +12,17 @@ import {
 
 export default class SocketManager {
     constructor(url, store) {
-        this.socket = new WebSocket(url);
-        this.socket.onmessage = this.handleSocketMessage.bind(this);
+        this.url = url;
+        this.connect();
         this.store = store;
         this.drawHandler = null;
         this.newRoundHandler = null;
+    }
+
+    connect() {
+        this.socket = new WebSocket(this.url);
+        this.socket.onmessage = this.handleSocketMessage.bind(this);
+        this.socket.onclose = this.onClose.bind(this);
     }
 
     handleSocketMessage(e) {
@@ -65,6 +72,15 @@ export default class SocketManager {
         } else {
             console.log(message);
         }
+    }
+
+    onClose() {
+        console.error('websocket connection closed');
+        this.store.dispatch(socketDisconnected());
+        setTimeout(function() {
+            console.log('attempting to reconnect');
+            this.connect();
+        }.bind(this), 3000)
     }
 
     setDrawHandler(callback) {

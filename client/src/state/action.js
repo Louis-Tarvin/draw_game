@@ -2,6 +2,10 @@ export function socketConnected(socketID) {
     return { type: 'SOCKET_CONNECTED', socketID };
 }
 
+export function socketDisconnected() {
+    return { type: 'SOCKET_DISCONNECTED' }
+}
+
 export function joinedRoom(roomCode, users) {
     return { type: 'JOINED_ROOM', roomCode, users };
 }

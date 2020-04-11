@@ -2,3 +2,15 @@
     min-height: 100vh;
     width: 100%;
 }
+
+.connection-bar {
+    position: absolute;
+    width: 100%;
+
+    background-color: #E74C3C;
+    color: white;
+
+    font-size: 20px;
+    text-align: center;
+    padding: 10px;
+}
