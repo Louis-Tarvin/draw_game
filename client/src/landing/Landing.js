@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import classNames from 'classnames';
 import useInput from 'common/useInput';
 
@@ -6,6 +7,16 @@ import './Landing.css';
 
 function EnterRoom({ username, socketManager, enabled }) {
     const [roomCode, roomCodeField] = useInput({ placeholder: 'Room code' });
+    const createRoomButtonRef = useRef(null);
+    const joinRoomButtonRef = useRef(null);
+    const socketState = useSelector(state => state.socketState);
+
+    useEffect(() => {
+        var disabled = !(socketState === 'connected')
+        createRoomButtonRef.current.disabled = disabled;
+        joinRoomButtonRef.current.disabled = disabled;
+        console.log(disabled);
+    }, [socketState, createRoomButtonRef, joinRoomButtonRef]);
 
     const joinRoomSubmit = e => {
         e.preventDefault();
@@ -25,18 +36,18 @@ function EnterRoom({ username, socketManager, enabled }) {
             <h2>Enter a room:</h2>
             <form className="join-room" onSubmit={joinRoomSubmit}>
                 {roomCodeField}
-                <input type="submit" value="Join Room" />
+                <input type="submit" value="Join Room" ref={joinRoomButtonRef} />
             </form>
             <hr />
             <form className="create-room" onSubmit={createRoomSubmit}>
-                <input type="submit" value="Create Room" />
+                <input type="submit" value="Create Room" ref={createRoomButtonRef} />
             </form>
         </div>
     );
 }
 
 export default function Landing({ socketManager, isHidden }) {
-    const usernameInputRef = useRef(null)
+    const usernameInputRef = useRef(null);
     const [username, usernameField] = useInput({ placeholder: 'Username', ref: usernameInputRef });
     const usernameIsValid = checkUsername(username);
 
