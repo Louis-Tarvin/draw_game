@@ -12,10 +12,9 @@ function EnterRoom({ username, socketManager, enabled }) {
     const socketState = useSelector(state => state.socketState);
 
     useEffect(() => {
-        var disabled = !(socketState === 'connected')
+        var disabled = !(socketState === 'connected');
         createRoomButtonRef.current.disabled = disabled;
         joinRoomButtonRef.current.disabled = disabled;
-        console.log(disabled);
     }, [socketState, createRoomButtonRef, joinRoomButtonRef]);
 
     const joinRoomSubmit = e => {
