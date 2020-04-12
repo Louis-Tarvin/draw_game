@@ -7,15 +7,7 @@ import './Landing.css';
 
 function EnterRoom({ username, socketManager, enabled }) {
     const [roomCode, roomCodeField] = useInput({ placeholder: 'Room code' });
-    const createRoomButtonRef = useRef(null);
-    const joinRoomButtonRef = useRef(null);
-    const socketState = useSelector(state => state.socketState);
-
-    useEffect(() => {
-        var disabled = !(socketState === 'connected');
-        createRoomButtonRef.current.disabled = disabled;
-        joinRoomButtonRef.current.disabled = disabled;
-    }, [socketState, createRoomButtonRef, joinRoomButtonRef]);
+    const disabled = useSelector(state => state.socketState !== 'connected');
 
     const joinRoomSubmit = e => {
         e.preventDefault();
@@ -35,11 +27,11 @@ function EnterRoom({ username, socketManager, enabled }) {
             <h2>Enter a room:</h2>
             <form className="join-room" onSubmit={joinRoomSubmit}>
                 {roomCodeField}
-                <input type="submit" value="Join Room" ref={joinRoomButtonRef} />
+                <input type="submit" value="Join Room" disabled={disabled} />
             </form>
             <hr />
             <form className="create-room" onSubmit={createRoomSubmit}>
-                <input type="submit" value="Create Room" ref={createRoomButtonRef} />
+                <input type="submit" value="Create Room" disabled={disabled} />
             </form>
         </div>
     );

@@ -1,8 +1,6 @@
 import {
     socketConnected,
     socketDisconnected,
-    socketReconnecting,
-    socketReconnectionFailed,
     joinedRoom,
     becomeLeader,
     becomeGuesser,
@@ -19,20 +17,12 @@ export default class SocketManager {
         this.store = store;
         this.drawHandler = null;
         this.newRoundHandler = null;
-        this.attemptedReconnection = false;
     }
 
     connect() {
         this.socket = new WebSocket(this.url);
         this.socket.onmessage = this.handleSocketMessage.bind(this);
-        this.socket.onopen = function() { this.attemptedReconnection = false };
         this.socket.onclose = this.onClose.bind(this);
-    }
-
-    reconnect() {
-        this.store.dispatch(socketReconnecting());
-        this.connect();
-        this.attemptedReconnection = true;
     }
 
     handleSocketMessage(e) {
@@ -85,15 +75,10 @@ export default class SocketManager {
     }
 
     onClose() {
-        console.error('websocket connection closed');
-        if (this.attemptedReconnection) {
-            this.store.dispatch(socketReconnectionFailed());
-        } else {
-            this.store.dispatch(socketDisconnected());
-            setTimeout(function() {
-                this.reconnect();
-            }.bind(this), 5000)
-        }
+        this.store.dispatch(socketDisconnected());
+        setTimeout(() => {
+            this.connect();
+        }, 5000)
     }
 
     setDrawHandler(callback) {

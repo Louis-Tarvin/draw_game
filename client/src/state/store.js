@@ -13,16 +13,6 @@ function stateManager(state = {}, action) {
         case 'SOCKET_DISCONNECTED':
             console.debug('Socket connection closed');
             return { socketID: null, room: null, socketState: 'disconnected' };
-        case 'SOCKET_RECONNECTING':
-            console.debug('Attempting to reconnect');
-            newState = { ...state };
-            newState.socketState = 'reconnecting';
-            return newState;
-        case 'SOCKET_RECONNECTION_FAILED':
-            console.debug('Failed to reconnect');
-            newState = { ...state };
-            newState.socketState = 'failed';
-            return newState;
         case 'JOINED_ROOM':
             console.debug('Joined room', action.roomCode, 'with users', action.users);
             let messages = [{ type: 'initial_join', roomCode: action.roomCode, users: action.users }];
