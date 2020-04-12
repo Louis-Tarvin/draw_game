@@ -9,14 +9,16 @@ function stateManager(state = {}, action) {
     switch(action.type) {
         case 'SOCKET_CONNECTED':
             console.debug('Socket connected, uid =', action.socketID);
-            return { socketID: action.socketID }
+            return { socketID: action.socketID, socketState: 'connected', room: null };
+        case 'SOCKET_DISCONNECTED':
+            console.debug('Socket connection closed');
+            return { socketID: null, room: null, socketState: 'disconnected' };
         case 'JOINED_ROOM':
             console.debug('Joined room', action.roomCode, 'with users', action.users);
-            let messages = [{ type: 'initial_join', roomCode: action.roomCode, users: action.users }]
-            return {
-                socketID: state.socketID,
-                room: { users: action.users, code: action.roomCode, messages }
-            };
+            let messages = [{ type: 'initial_join', roomCode: action.roomCode, users: action.users }];
+            newState = { ...state };
+            newState.room = { users: action.users, code: action.roomCode, messages };
+            return newState;
         case 'LEFT_ROOM':
             console.debug('Left room');
             return { socketID: state.socketID };
