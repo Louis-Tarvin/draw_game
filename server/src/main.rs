@@ -5,9 +5,14 @@ use actix_web_actors::ws;
 use flexi_logger::{opt_format, Cleanup, Criterion, Duplicate, Logger, Naming};
 use log::info;
 
+pub mod room;
 pub mod server;
 pub mod session;
 pub mod word_pack;
+
+pub use room::Room;
+pub use server::{ClientMessage, Event, GameServer};
+pub use word_pack::WordPack;
 
 use clap::{crate_authors, crate_version, load_yaml};
 
@@ -73,7 +78,7 @@ async fn main() -> std::io::Result<()> {
 async fn socket_route(
     req: HttpRequest,
     stream: web::Payload,
-    game_server: web::Data<Addr<server::GameServer>>,
+    game_server: web::Data<Addr<GameServer>>,
 ) -> Result<HttpResponse, Error> {
     ws::start(
         session::Session {
