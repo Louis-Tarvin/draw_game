@@ -21,7 +21,9 @@ function stateManager(state = {}, action) {
             return newState;
         case 'LEFT_ROOM':
             console.debug('Left room');
-            return { socketID: state.socketID };
+            newState = { ...state };
+            newState.room = null;
+            return newState;
         case 'CHAT_MESSAGE':
             newState = { ...state };
             newState.room = { ...newState.room };
@@ -74,7 +76,9 @@ function stateManager(state = {}, action) {
             return newState;
         case 'LEAVE_ROOM':
             console.debug('Leave room');
-            return { socketID: state.socketID }
+            newState = { ...state };
+            newState.room = null;
+            return newState;
         default:
             console.warn('Unhandled action in state', action, 'state was:', state);
             return state;
