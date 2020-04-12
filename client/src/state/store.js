@@ -74,11 +74,6 @@ function stateManager(state = {}, action) {
             const leaveMessage = { type: 'user_left', user: state.room.users[action.userID] };
             newState.room.messages = pushItem(newState.room.messages, leaveMessage);
             return newState;
-        case 'LEAVE_ROOM':
-            console.debug('Leave room');
-            newState = { ...state };
-            newState.room = null;
-            return newState;
         default:
             console.warn('Unhandled action in state', action, 'state was:', state);
             return state;
