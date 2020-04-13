@@ -75,6 +75,7 @@ impl Handler<Event> for Session {
             Event::Winner(session_id, word) => format!("w{},{}", session_id, word),
             Event::UserJoin(session_id, username) => format!("j{},{}", session_id, username),
             Event::UserGone(session_id) => format!("g{}", session_id),
+            Event::EnterLobby(host_id) => format!("o{}", host_id),
         };
         ctx.text(message);
     }

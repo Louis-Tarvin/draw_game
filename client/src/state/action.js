@@ -14,6 +14,10 @@ export function leftRoom() {
     return { type: 'LEFT_ROOM' };
 }
 
+export function enterLobby(hostID) {
+    return { type: 'ENTER_LOBBY', hostID };
+}
+
 export function chatMessage(userID, content) {
     return { type: 'CHAT_MESSAGE', message: { userID, content } };
 }

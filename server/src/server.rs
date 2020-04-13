@@ -2,6 +2,7 @@ use actix::prelude::*;
 use rand::{distributions::Alphanumeric, prelude::*, rngs::ThreadRng};
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::{Room, WordPack};
 
@@ -28,6 +29,8 @@ pub enum Event {
     UserJoin(usize, String),
     /// When another user leaves
     UserGone(usize),
+    /// Join a lobby. Contains the id of the host
+    EnterLobby(usize),
 }
 
 pub struct GameServer {
@@ -88,6 +91,7 @@ impl GameServer {
             }
         }
     }
+
     fn join_room(&mut self, key: &str, username: String, session_id: usize) {
         if let Some(room) = self.rooms.get_mut(key) {
             let recipient = self
@@ -103,6 +107,7 @@ impl GameServer {
             );
         }
     }
+
     fn leave_room(&mut self, key: &str, session_id: usize) {
         if let Some(room) = self.rooms.get_mut(key) {
             // If room after the session leaving is now empty, delete it
@@ -121,6 +126,18 @@ impl GameServer {
             );
         }
     }
+
+    fn start_room(&mut self, key: &str, session_id: usize) {
+        if let Some(room) = self.rooms.get_mut(key) {
+            room.start(session_id);
+        } else {
+            warn!(
+                "User {} tried to start non-existant room {}",
+                session_id, key
+            );
+        }
+    }
+
     #[allow(clippy::map_entry)]
     fn connect(&mut self, recipient: Recipient<Event>) -> usize {
         loop {
@@ -136,6 +153,7 @@ impl GameServer {
             }
         }
     }
+
     fn disconnect(&mut self, id: usize) {
         self.recipients.remove(&id);
         trace!(
@@ -144,6 +162,13 @@ impl GameServer {
             self.recipients.len()
         );
     }
+
+    fn new_round(&mut self, room_key: String) {
+        if let Some(room) = self.rooms.get_mut(&room_key) {
+            room.new_round();
+        }
+    }
+
 }
 
 impl Actor for GameServer {
@@ -174,7 +199,7 @@ pub struct DisconnectMessage {
 impl Handler<ClientMessage> for GameServer {
     type Result = ();
 
-    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: ClientMessage, ctx: &mut Context<Self>) {
         let type_char = if let Some(char) = msg.content.chars().next() {
             char
         } else {
@@ -194,7 +219,12 @@ impl Handler<ClientMessage> for GameServer {
                 }
 
                 if let Some(room) = self.rooms.get_mut(&room_key) {
-                    room.handle_guess(msg.session_id, chat);
+                    if room.handle_guess(msg.session_id, chat) {
+                        let key = room_key.clone();
+                        ctx.run_later(Duration::new(5, 0), move |act, _ctx| {
+                            act.new_round(key);
+                        });
+                    }
                 } else {
                     warn!(
                         "User {} was marked as being in non-existant room {} when sending message",
@@ -216,6 +246,9 @@ impl Handler<ClientMessage> for GameServer {
             }
             (Some(room_key), 'q') => {
                 self.leave_room(&room_key, msg.session_id);
+            }
+            (Some(room_key), 's') => {
+                self.start_room(&room_key, msg.session_id);
             }
             (None, 'j') => {
                 let data = msg.content.chars().skip(1).collect::<String>();

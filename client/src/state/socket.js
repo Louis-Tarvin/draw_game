@@ -3,6 +3,7 @@ import {
     socketDisconnected,
     joinedRoom,
     leftRoom,
+    enterLobby,
     becomeLeader,
     becomeGuesser,
     chatMessage,
@@ -68,8 +69,11 @@ export default class SocketManager {
         } else if (message[0] === 'q') {
             this.store.dispatch(leftRoom());
         } else if (message[0] === 'w') {
-            var data = message.slice(1).split(',');
+            let data = message.slice(1).split(',');
             this.store.dispatch(winner(data[0], data[1]));
+        } else if (message[0] === 'o') {
+            let userID = message.slice(1);
+            this.store.dispatch(enterLobby(userID));
         } else {
             console.log(message);
         }
@@ -108,5 +112,9 @@ export default class SocketManager {
 
     sendDraw(params) {
         this.socket.send('d' + params.join(','));
+    }
+
+    startGame() {
+        this.socket.send('s');
     }
 }

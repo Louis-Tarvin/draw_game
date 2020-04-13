@@ -4,8 +4,6 @@ version = "0.1.0"
 authors = ["Louis Tarvin <lt@nivrat.com>", "Louis de Wardt <contact@louis.dewardt.uk>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 actix-web = "2.0"
 actix = "0.9"
