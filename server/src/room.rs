@@ -175,15 +175,17 @@ impl Room {
                 return true;
             }
             if let RoomState::Round(RoundState {
-                leader: session_id, ..
+                leader, ..
             }) = self.state
             {
-                trace!(
-                    "Current leader ({}) left room so new round in room {}",
-                    session_id,
-                    self.key
-                );
-                self.new_round();
+                if leader == session_id {
+                    trace!(
+                        "Current leader ({}) left room so new round in room {}",
+                        session_id,
+                        self.key
+                    );
+                    self.new_round();
+                }
             }
         } else {
             warn!(
@@ -191,7 +193,6 @@ impl Room {
                 session_id, self.key
             );
         }
-
         false
     }
 
