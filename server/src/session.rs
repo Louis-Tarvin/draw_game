@@ -76,6 +76,13 @@ impl Handler<Event> for Session {
             Event::UserJoin(session_id, username) => format!("j{},{}", session_id, username),
             Event::UserGone(session_id) => format!("g{}", session_id),
             Event::EnterLobby(host_id) => format!("o{}", host_id),
+            Event::SettingsData(wordpacks) => {
+                let mut string = "s".to_string();
+                for (id, name, description) in wordpacks {
+                    string.push_str(&format!("\n{},{},{}", id, name, description));
+                }
+                string
+            }
         };
         ctx.text(message);
     }

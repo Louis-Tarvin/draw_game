@@ -32,6 +32,12 @@ function stateManager(state = {}, action) {
             newState.room.state = 'lobby';
             newState.room.host = state.room.users[action.hostID];
             return newState;
+        case 'RECEIVE_SETTINGS':
+            console.debug('received settings data');
+            newState = { ...state };
+            newState.room = { ...state.room };
+            newState.room.wordpacks = action.wordpacks;
+            return newState;
         case 'CHAT_MESSAGE':
             newState = { ...state };
             newState.room = { ...newState.room };

@@ -4,7 +4,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::{Room, WordPack};
+use crate::word_pack::{load_word_packs, WordPack};
+use crate::Room;
 
 use log::{debug, info, trace, warn};
 
@@ -31,29 +32,31 @@ pub enum Event {
     UserGone(usize),
     /// Join a lobby. Contains the id of the host
     EnterLobby(usize),
+    // Settings suplementary data for client. Wordpack id followed by name and description
+    SettingsData(Vec<(usize, String, String)>),
 }
 
 pub struct GameServer {
     rooms: HashMap<String, Room>,
     recipients: HashMap<usize, Recipient<Event>>,
     rng: ThreadRng,
-    word_pack: Arc<WordPack>,
+    word_packs: Arc<Vec<WordPack>>,
 }
 
 impl GameServer {
-    pub fn new<P: std::fmt::Debug + AsRef<std::path::Path>>(word_pack_path: P) -> Self {
-        let word_pack = WordPack::new(&word_pack_path).expect("Error loading the word pack");
+    pub fn new<P: std::fmt::Debug + AsRef<std::path::Path>>(word_pack_dir: P) -> Self {
+        let word_packs = load_word_packs(word_pack_dir).expect("Error loading the word packs");
 
         info!(
-            "Game server instance created with {} words",
-            word_pack.list_len()
+            "Game server instance created with {} word packs",
+            word_packs.len()
         );
 
         GameServer {
             rooms: HashMap::new(),
             recipients: HashMap::new(),
             rng: ThreadRng::default(),
-            word_pack: Arc::new(word_pack),
+            word_packs: Arc::new(word_packs),
         }
     }
 
@@ -67,7 +70,7 @@ impl GameServer {
                 if let Some(recipient) = self.recipients.get(&session_id) {
                     let room = Room::new(
                         key.clone(),
-                        Arc::clone(&self.word_pack),
+                        Arc::clone(&self.word_packs),
                         session_id,
                         recipient.clone(),
                         username.clone(),
@@ -127,9 +130,9 @@ impl GameServer {
         }
     }
 
-    fn start_room(&mut self, key: &str, session_id: usize) {
+    fn start_room(&mut self, key: &str, session_id: usize, lines: Vec<String>) {
         if let Some(room) = self.rooms.get_mut(key) {
-            room.start(session_id);
+            room.start(session_id, lines);
         } else {
             warn!(
                 "User {} tried to start non-existant room {}",
@@ -168,7 +171,6 @@ impl GameServer {
             room.new_round();
         }
     }
-
 }
 
 impl Actor for GameServer {
@@ -248,7 +250,8 @@ impl Handler<ClientMessage> for GameServer {
                 self.leave_room(&room_key, msg.session_id);
             }
             (Some(room_key), 's') => {
-                self.start_room(&room_key, msg.session_id);
+                let lines: Vec<String> = msg.content.lines().skip(1).map(|x| x.to_string()).collect();
+                self.start_room(&room_key, msg.session_id, lines);
             }
             (None, 'j') => {
                 let data = msg.content.chars().skip(1).collect::<String>();

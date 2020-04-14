@@ -70,6 +70,14 @@ canvas {
     margin-right: 0;
 }
 
+.start-form {
+    width: 500px;
+}
+
+.start-form .selected {
+    font-weight: bold;
+}
+
 canvas {
     display: block;
     margin: auto;
@@ -136,6 +144,52 @@ input[type="submit"] {
     font-size: 15px;
 
     padding: 5px;
+}
+
+input[type="checkbox"] {
+    display: none;
+}
+
+input[type="checkbox"] + .checkbox-span {
+    background-color: white;
+    display: inline-block;
+    padding: 12px;
+    border: 1px solid #9B59B6;
+}
+
+input[type="checkbox"]:checked + .checkbox-span {
+    background-color: #9B59B6;
+    color: white;
+}
+
+input[type="checkbox"]:checked + .checkbox-span:after {
+    content: '\2714';
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    color: white
+}
+
+.checkbox-span {
+    display: inline;
+    border-radius: 5px;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.checkbox-wrapper {
+    display: block;
+    position: relative;
+    padding-left: 30px;
+    height: 26;
+    padding-top: 4px;
+    margin: 10px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    cursor: pointer;
 }
 
 .autoscroll-button {

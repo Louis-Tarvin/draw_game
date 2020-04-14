@@ -1,3 +1,5 @@
+General
+A general list of words of varying difficulty.
 cat
 banana
 liberty

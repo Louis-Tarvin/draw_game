@@ -5,21 +5,52 @@ use actix::prelude::*;
 use log::{error, trace, warn};
 use rand::prelude::*;
 
-use crate::{Event, WordPack};
+use crate::{word_pack::WordPack, Event};
 
 struct LobbyState {
     pub host: usize,
 }
 
 struct RoundState {
-    pub word: usize,
+    pub word: (usize, usize),
     pub leader: usize,
 }
 
 struct WinnerState {
-    pub word: usize,
+    pub word: (usize, usize),
     pub winner: usize,
     pub alternate: Option<usize>,
+}
+
+#[derive(Default, Debug)]
+struct Settings {
+    pub round_timer: bool,
+    pub allow_clear: bool,
+    pub enabled_word_packs: Vec<usize>,
+}
+impl Settings {
+    fn parse_from_lines(lines: Vec<String>, max_wordpack_id: usize) -> Option<Settings> {
+        if let [wordpacks, time_limit, canvas_clearing] = &*lines {
+            let wordpacks = wordpacks
+                .split(',')
+                .map(|x| {
+                    if let Ok(id) = x.parse() {
+                        if id < max_wordpack_id {
+                            return Ok(id);
+                        }
+                    }
+                    Err(())
+                })
+                .collect::<Result<Vec<_>, _>>()
+                .ok()?;
+            return Some(Settings {
+                enabled_word_packs: wordpacks,
+                round_timer: time_limit == "T",
+                allow_clear: canvas_clearing == "T",
+            });
+        }
+        None
+    }
 }
 
 enum RoomState {
@@ -32,7 +63,9 @@ pub struct Room {
     state: RoomState,
     key: String,
     occupants: HashMap<usize, (Recipient<Event>, String)>,
-    word_pack: Arc<WordPack>,
+    word_packs: Arc<Vec<WordPack>>,
+    num_words: usize,
+    settings: Settings,
     rng: ThreadRng,
     queue: VecDeque<usize>,
     excluded_words: VecDeque<usize>,
@@ -42,7 +75,7 @@ pub struct Room {
 impl Room {
     pub fn new(
         key: String,
-        word_pack: Arc<WordPack>,
+        word_packs: Arc<Vec<WordPack>>,
         session_id: usize,
         recipient: Recipient<Event>,
         username: String,
@@ -55,8 +88,10 @@ impl Room {
             state: RoomState::Lobby(LobbyState { host: session_id }),
             key: key.clone(),
             occupants,
-            max_excluded_words: word_pack.list_len() / 2,
-            word_pack,
+            max_excluded_words: 0,
+            word_packs,
+            num_words: 0,
+            settings: Settings::default(),
             rng: ThreadRng::default(),
             queue,
             excluded_words: VecDeque::new(),
@@ -66,10 +101,8 @@ impl Room {
             &recipient,
             Event::EnterRoom(key, vec![(session_id, username)]),
         );
-        room.direct_message(
-            &recipient,
-            Event::EnterLobby(session_id),
-        );
+        room.direct_message(&recipient, Event::EnterLobby(session_id));
+        room.send_settings_data(&recipient);
         room
     }
 
@@ -88,23 +121,64 @@ impl Room {
         }
     }
 
-    fn choose_new_word(&mut self) -> usize {
+    fn send_settings_data(&self, recipient: &Recipient<Event>) {
+        let data: Vec<_> = self
+            .word_packs
+            .iter()
+            .enumerate()
+            .map(|(i, pack)| (i, pack.get_name().clone(), pack.get_description().clone()))
+            .collect();
+        self.direct_message(&recipient, Event::SettingsData(data));
+    }
+
+    fn choose_new_word(&mut self) -> (usize, usize) {
         loop {
-            let word_index = self.rng.gen_range(0, self.word_pack.list_len());
+            let word_index = self.rng.gen_range(0, self.num_words);
             if !self.excluded_words.contains(&word_index) {
                 if self.excluded_words.len() >= self.max_excluded_words {
                     self.excluded_words.pop_front();
                 }
                 self.excluded_words.push_back(word_index);
-                return word_index;
+                let mut acc = 0;
+                for i in &self.settings.enabled_word_packs {
+                    if self.word_packs[*i].list_len() + acc > word_index {
+                        return (*i, word_index - acc);
+                    }
+                    acc += self.word_packs[*i].list_len();
+                }
+                unreachable!("word index was out of bounds");
             }
         }
     }
 
-    pub fn start(&mut self, session_id: usize) {
+    fn get_word(&self, word: (usize, usize)) -> &String {
+        self.word_packs[word.0].get_word(word.1)
+    }
+
+    pub fn start(&mut self, session_id: usize, lines: Vec<String>) {
         if let RoomState::Lobby(LobbyState { host }) = self.state {
             if session_id == host {
-                self.new_round();
+                if let Some(settings) = Settings::parse_from_lines(lines, self.word_packs.len()) {
+                    self.num_words = self
+                        .word_packs
+                        .iter()
+                        .enumerate()
+                        .filter(|(i, _)| settings.enabled_word_packs.contains(&i))
+                        .map(|(_, x)| x.list_len())
+                        .sum();
+                    if self.num_words == 0 {
+                        warn!("tried to start game with no word packs in room {}", self.key);
+                        return;
+                    }
+                    trace!("room {} started with {} words, settings: {:?}", self.key, self.num_words, settings);
+                    self.settings = settings;
+                    self.new_round();
+                } else {
+                    warn!(
+                        "session id {} sent invalid settings in room {}",
+                        session_id, self.key
+                    );
+                }
             } else {
                 warn!(
                     "user {} tried to start game when they weren't host in room {}",
@@ -147,7 +221,7 @@ impl Room {
             RoomState::Winner(WinnerState { word, winner, .. }) => {
                 self.direct_message(
                     &recipient,
-                    Event::Winner(winner, self.word_pack.get_word(word).clone()),
+                    Event::Winner(winner, self.get_word(word).clone()),
                 );
                 self.send_draw_history(session_id, &recipient);
             }
@@ -174,10 +248,7 @@ impl Room {
             if self.occupants.is_empty() {
                 return true;
             }
-            if let RoomState::Round(RoundState {
-                leader, ..
-            }) = self.state
-            {
+            if let RoomState::Round(RoundState { leader, .. }) = self.state {
                 if leader == session_id {
                     trace!(
                         "Current leader ({}) left room so new round in room {}",
@@ -226,13 +297,13 @@ impl Room {
                     } else {
                         self.direct_message(
                             recipient,
-                            Event::NewLeader(self.word_pack.get_word(word).clone()),
+                            Event::NewLeader(self.get_word(word).clone()),
                         );
                     }
                 }
 
                 trace!(
-                    "Room {} has new round with word {}, leader {}",
+                    "Room {} has new round with word {:?}, leader {}",
                     self.key,
                     word,
                     new_leader,
@@ -247,14 +318,8 @@ impl Room {
         if let RoomState::Round(RoundState { word, leader }) = self.state {
             if session_id != leader {
                 self.broadcast_event(Event::Message(session_id, message.clone()));
-                if self
-                    .word_pack
-                    .word_matches(word, &message.trim().to_lowercase())
-                {
-                    self.broadcast_event(Event::Winner(
-                        session_id,
-                        self.word_pack.get_word(word).clone(),
-                    ));
+                if self.word_packs[word.0].word_matches(word.1, &message.trim().to_lowercase()) {
+                    self.broadcast_event(Event::Winner(session_id, self.get_word(word).clone()));
                     //TODO: sort out alternate
                     self.end_round(session_id, None);
                     return true;

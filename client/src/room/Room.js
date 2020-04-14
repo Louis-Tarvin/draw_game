@@ -34,10 +34,11 @@ export default function Room({ socketManager }) {
         case 'lobby':
             if (host.isCurrentUser) {
                 title = (<h2 className="title">Press start when ready</h2>);
+                mainCardBody = (<Lobby socketManager={socketManager} />);
             } else {
                 title = (<h2 className="title">Waiting for {host.username}</h2>);
+                mainCardBody = (<></>);
             }
-            mainCardBody = (<Lobby socketManager={socketManager} />);
             break;
         case 'leader':
             title = (<h2 className="title">Draw {word}</h2>);

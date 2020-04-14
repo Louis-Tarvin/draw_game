@@ -18,6 +18,10 @@ export function enterLobby(hostID) {
     return { type: 'ENTER_LOBBY', hostID };
 }
 
+export function receiveSettingsData(wordpacks) {
+    return { type: 'RECEIVE_SETTINGS', wordpacks };
+}
+
 export function chatMessage(userID, content) {
     return { type: 'CHAT_MESSAGE', message: { userID, content } };
 }

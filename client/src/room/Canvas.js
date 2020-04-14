@@ -26,6 +26,7 @@ export default function Canvas({ socketManager, isLeader }) {
     const [penSize, setPenSize] = useState(2);
 
     const drawLine = useCallback((startX, startY, endX, endY, penSize) => {
+        //TODO: fix race condition (maybe prerender canvas)
         if (!context) {
             console.error('Context wasn\'t available during line drawing');
             return;

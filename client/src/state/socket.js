@@ -4,6 +4,7 @@ import {
     joinedRoom,
     leftRoom,
     enterLobby,
+    receiveSettingsData,
     becomeLeader,
     becomeGuesser,
     chatMessage,
@@ -74,6 +75,17 @@ export default class SocketManager {
         } else if (message[0] === 'o') {
             let userID = message.slice(1);
             this.store.dispatch(enterLobby(userID));
+        } else if (message[0] === 's') {
+            let lines = message.split('\n').slice(1);
+            let wordpacks = [];
+            for (var i = 0; i < lines.length; i++) {
+                let wordpack = lines[i].split(',');
+                let wordpackID = wordpack[0];
+                let wordpackName = wordpack[1];
+                let wordpackDescription = wordpack.slice(2).join(',');
+                wordpacks.push({ id: wordpackID, name: wordpackName, description: wordpackDescription });
+            }
+            this.store.dispatch(receiveSettingsData(wordpacks));
         } else {
             console.log(message);
         }
@@ -114,7 +126,7 @@ export default class SocketManager {
         this.socket.send('d' + params.join(','));
     }
 
-    startGame() {
-        this.socket.send('s');
+    startGame(selectedWordpackIDs) {
+        this.socket.send(['s', selectedWordpackIDs.join(','), 'F', 'F'].join('\n'));
     }
 }
