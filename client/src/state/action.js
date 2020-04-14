@@ -18,11 +18,13 @@ export function chatMessage(userID, content) {
     return { type: 'CHAT_MESSAGE', message: { userID, content } };
 }
 
-export function winner(winnerID, word) {
+export function winner(winnerID, rawWord) {
+    const word = rawWord[0].toUpperCase() + rawWord.slice(1);
     return { type: 'WINNER', winnerID, word };
 }
 
-export function becomeLeader(word) {
+export function becomeLeader(rawWord) {
+    const word = rawWord[0].toUpperCase() + rawWord.slice(1);
     return { type: 'BECOME_LEADER', word };
 }
 
