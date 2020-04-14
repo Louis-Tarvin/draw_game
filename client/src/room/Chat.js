@@ -89,13 +89,15 @@ export default function Chat({ socketManager, disabled }) {
         setAutoscroll(true);
     }, [setAutoscroll]);
 
-    const disableAutoscroll = useCallback(() => {
+    const handleMessagesScroll = useCallback(() => {
         // Checking if last message is visible
         const lastMessage = messageRef.current.lastChild;
         const rect = lastMessage.getBoundingClientRect();
         const isNotVisible = (rect.top - messageRef.current.getBoundingClientRect().bottom >= 0);
         if (isNotVisible) {
             setAutoscroll(false);
+        } else {
+            setAutoscroll(true);
         }
     }, [setAutoscroll, messageRef]);
 
@@ -108,7 +110,7 @@ export default function Chat({ socketManager, disabled }) {
                 className={autoscrollButtonClass}
                 onClick={enableAutoscroll}
                 ref={autoscrollButtonRef} />
-            <div className="messages" onWheel={disableAutoscroll} ref={messageRef}>{messages}</div>
+            <div className="messages" onWheel={handleMessagesScroll} ref={messageRef}>{messages}</div>
             <form className="chat-form" onSubmit={chatSubmit}>
                 <input type="text"
                     ref={chatBoxRef}
