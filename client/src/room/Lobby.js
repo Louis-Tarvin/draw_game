@@ -7,8 +7,8 @@ function Wordpack({ toggleSelected, isSelected, name, description, id }) {
         <div
             className={classNames('wordpack', { 'selected': isSelected })}
             onClick={toggleSelected.bind(null, id)} >
-            <span>{name}</span>
-            <span>{description}</span>
+            <div className="wordpack-name">{name}</div>
+            <div className="wordpack-description">{description}</div>
         </div>
     )
 }
@@ -41,17 +41,21 @@ export default function Lobby({ socketManager }) {
                     <input type="checkbox" id="canvas-clear-checkbox" />
                     <span className="checkbox-span"></span>
                 </label>
-                <h2>Wordpacks:</h2>
-                {wordpacks?
-                    wordpacks.map(data => (
-                        <Wordpack
-                            key={data.id}
-                            toggleSelected={toggleSelected}
-                            isSelected={selectedWordpacks[data.id]}
-                            {...data} />)
-                        )
-                    : 'loading'}
-                <input type="submit" value="Start Game" disabled={!wordpacks} />
+                <div>
+                    <h2>Wordpacks:</h2>
+                </div>
+                <div className="wordpacks-wrapper">
+                    {wordpacks?
+                        wordpacks.map(data => (
+                            <Wordpack
+                                key={data.id}
+                                toggleSelected={toggleSelected}
+                                isSelected={selectedWordpacks[data.id]}
+                                {...data} />)
+                            )
+                        : 'loading'}
+                </div>
+                <input type="submit" value="Start Game" id="start-button" disabled={!wordpacks} />
             </form>
         </>
     )

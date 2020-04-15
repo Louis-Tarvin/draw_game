@@ -1,0 +1,35 @@
+Easy
+Clear and unambiguous words that should be easy to draw and guess
+cat
+people
+elephant
+banana
+house
+tomato
+spoon
+window
+pizza
+tree
+cow
+pig
+phone
+fork
+bee
+ice cream
+giraffe
+rainbow
+ghost
+flower
+robot
+volcano
+fire
+duck
+money
+web
+mouse
+guitar
+bird
+tent
+apple
+book
+cactus
