@@ -167,8 +167,6 @@ input[type="text"] {
 }
 
 .wordpacks-wrapper {
-    /* border: 1px solid;
-    border-radius: 5px; */
     height: 350px;
     min-width: 500px;
     margin: 10px 0;
@@ -179,7 +177,7 @@ input[type="text"] {
 }
 
 .wordpack {
-    border: 1px solid;
+    border: 1px solid #9B59B6;
     border-radius: 5px;
     width: 200px;
     height: 150px;

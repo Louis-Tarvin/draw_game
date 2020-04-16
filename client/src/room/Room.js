@@ -33,7 +33,7 @@ export default function Room({ socketManager }) {
     switch (roomState) {
         case 'lobby':
             if (host.isCurrentUser) {
-                title = (<h2 className="title">Press start when ready</h2>);
+                title = (<h2 className="title">Press start when everyone is ready</h2>);
                 mainCardBody = (<Lobby socketManager={socketManager} />);
             } else {
                 title = (<h2 className="title">Waiting for {host.username}</h2>);

@@ -52,6 +52,7 @@ function Message({ message, users }) {
 export default function Chat({ socketManager, disabled }) {
     const [message, setMessage] = useState('');
     const [autoscroll, setAutoscroll] = useState(true);
+    const roomState = useSelector(state => state.room.state);
     const users = useSelector(state => state.room.users);
     const messages = useSelector(state => state.room.messages)
         .map((message, index) => (<Message key={index} message={message} users={users}/>));
@@ -101,6 +102,21 @@ export default function Chat({ socketManager, disabled }) {
 
     const autoscrollButtonClass = autoscroll ? "autoscroll-button invisible" : "autoscroll-button"
 
+    let chatPlaceholder;
+    switch (roomState) {
+        case 'lobby':
+            chatPlaceholder = "Chat to others in the room";
+            break;
+        case 'leader':
+            chatPlaceholder = "Can't chat while drawing";
+            break;
+        case 'guesser':
+            chatPlaceholder = "Make a guess";
+            break;
+        default:
+
+    }
+
     return (
         <div className="chat-area">
             <input type="button"
@@ -113,7 +129,7 @@ export default function Chat({ socketManager, disabled }) {
                 <input type="text"
                     ref={chatBoxRef}
                     value={disabled ? '' : message}
-                    placeholder={disabled ? "Can't chat while drawing": "Make a guess"}
+                    placeholder={chatPlaceholder}
                     onChange={e => setMessage(e.target.value)}
                     disabled={disabled}/>
             </form>

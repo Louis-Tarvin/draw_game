@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import classNames from 'classnames';
 
@@ -14,13 +14,20 @@ function Wordpack({ toggleSelected, isSelected, name, description, id }) {
 }
 
 export default function Lobby({ socketManager }) {
+    const [canStart, setCanStart] = useState(false);
     const wordpacks = useSelector(state => state.room.wordpacks);
     const [selectedWordpacks, setSelectedWordpacks] = useState({});
+    const roundTimerCheckboxRef = useRef(null);
+    const canvasClearCheckboxRef = useRef(null);
 
     const onStart = e => {
         e.preventDefault();
+        const timeLimit = roundTimerCheckboxRef.current.checked? 'T': 'F';
+        const canvasClearing = canvasClearCheckboxRef.current.checked? 'T': 'F';
         const selectedIDs = Object.keys(selectedWordpacks).filter(id => selectedWordpacks[id]);
-        socketManager.startGame(selectedIDs);
+        if (selectedIDs) {
+            socketManager.startGame(selectedIDs, timeLimit, canvasClearing);
+        }
     }
 
     const toggleSelected = id => {
@@ -29,16 +36,21 @@ export default function Lobby({ socketManager }) {
         setSelectedWordpacks(selected);
     }
 
+    useEffect(() => {
+        console.log(Object.keys(selectedWordpacks).filter(id => selectedWordpacks[id]).length > 0);
+        setCanStart(Object.keys(selectedWordpacks).filter(id => selectedWordpacks[id]).length > 0);
+    }, [selectedWordpacks, setCanStart]);
+
     return (
         <>
             <h2>Room Settings:</h2>
             <form className="start-form" onSubmit={onStart}>
-                <label className="checkbox-wrapper" htmlFor="round-timer-checkbox">Round time limmit
-                    <input type="checkbox" id="round-timer-checkbox" />
+                <label className="checkbox-wrapper" htmlFor="round-timer-checkbox">Round time limit
+                    <input type="checkbox" id="round-timer-checkbox" ref={roundTimerCheckboxRef} />
                     <span className="checkbox-span"></span>
                 </label>
                 <label className="checkbox-wrapper" htmlFor="canvas-clear-checkbox">Allow canvas clearing
-                    <input type="checkbox" id="canvas-clear-checkbox" />
+                    <input type="checkbox" id="canvas-clear-checkbox" ref={canvasClearCheckboxRef} />
                     <span className="checkbox-span"></span>
                 </label>
                 <div>
@@ -55,7 +67,7 @@ export default function Lobby({ socketManager }) {
                             )
                         : 'loading'}
                 </div>
-                <input type="submit" value="Start Game" id="start-button" disabled={!wordpacks} />
+                <input type="submit" value="Start Game" id="start-button" disabled={!wordpacks || !canStart} />
             </form>
         </>
     )

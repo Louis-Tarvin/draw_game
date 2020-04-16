@@ -126,7 +126,7 @@ export default class SocketManager {
         this.socket.send('d' + params.join(','));
     }
 
-    startGame(selectedWordpackIDs) {
-        this.socket.send(['s', selectedWordpackIDs.join(','), 'F', 'F'].join('\n'));
+    startGame(selectedWordpackIDs, timeLimit, canvasClearing) {
+        this.socket.send(['s', selectedWordpackIDs.join(','), timeLimit, canvasClearing].join('\n'));
     }
 }
