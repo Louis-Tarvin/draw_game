@@ -58,6 +58,7 @@ function stateManager(state = {}, action) {
             newState.room = { ...newState.room };
             newState.room.state = 'leader';
             newState.room.word = action.word;
+            newState.room.canvasClearing = action.canvasClearing;
             newState.room.leader = state.room.users[state.socketID];
             return newState;
         case 'BECOME_GUESSER':

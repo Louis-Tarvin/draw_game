@@ -70,8 +70,11 @@ impl Handler<Event> for Session {
             Event::Draw(x1, y1, x2, y2, pen_size) => {
                 format!("d{},{},{},{},{}", x1, y1, x2, y2, pen_size)
             }
+            Event::ClearCanvas => "b".to_string(),
             Event::NewRound(username) => format!("r{}", username),
-            Event::NewLeader(word) => format!("l{}", word),
+            Event::NewLeader(canvas_clearing, word) => {
+                format!("l{}{}", if canvas_clearing { 'T' } else { 'F' }, word)
+            }
             Event::Winner(session_id, word) => format!("w{},{}", session_id, word),
             Event::UserJoin(session_id, username) => format!("j{},{}", session_id, username),
             Event::UserGone(session_id) => format!("g{}", session_id),

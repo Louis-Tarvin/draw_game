@@ -37,7 +37,6 @@ export default function Lobby({ socketManager }) {
     }
 
     useEffect(() => {
-        console.log(Object.keys(selectedWordpacks).filter(id => selectedWordpacks[id]).length > 0);
         setCanStart(Object.keys(selectedWordpacks).filter(id => selectedWordpacks[id]).length > 0);
     }, [selectedWordpacks, setCanStart]);
 

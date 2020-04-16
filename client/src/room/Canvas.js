@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 
 function useCanvasContext() {
     const [context, setContext] = useState(null);
@@ -15,10 +16,12 @@ function useCanvasContext() {
     return [context, canvas, canvasRef];
 }
 
-export default function Canvas({ socketManager, isLeader }) {
+export default function Canvas({ socketManager, isLeader, clearButtonRef }) {
     const [context, canvas, canvasRef] = useCanvasContext();
     const [penDown, setPenDown] = useState(false);
     const [penLeft, setPenLeft] = useState(false);
+
+    const canvasClearing = useSelector(state => state.room.canvasClearing);
 
     const [prevX, setPrevX] = useState(0);
     const [prevY, setPrevY] = useState(0);
@@ -53,17 +56,26 @@ export default function Canvas({ socketManager, isLeader }) {
             .map(x => Math.round(x))
             .map(x => x < 0? 0: x)
         );
-    }, [drawLine])
+    }, [drawLine]);
 
     const clearCanvas = useCallback(() => {
         if (context)
             context.clearRect(0, 0, canvas.width, canvas.height);
     }, [context, canvas]);
 
+    const eraseCanvas = useCallback(() => {
+        socketManager.clear();
+        clearCanvas();
+    }, [socketManager, clearCanvas]);
+
     useEffect(() => {
-        socketManager.setDrawHandler((startX, startY, endX, endY, penSize) => {
+        socketManager.setDrawHandler((erase, startX, startY, endX, endY, penSize) => {
             if (!isLeader) {
-                drawCleanLine(startX, startY, endX, endY, penSize);
+                if (erase) {
+                    clearCanvas();
+                } else {
+                    drawCleanLine(startX, startY, endX, endY, penSize);
+                }
             }
         });
 
@@ -142,14 +154,17 @@ export default function Canvas({ socketManager, isLeader }) {
     }, [isLeader, penDown, canvas, drawCleanLine, penSize, prevX, prevY]);
 
     return (
-        <canvas
-            ref={canvasRef}
-            onMouseDown={mouseDown}
-            onMouseMove={mouseMove}
-            onMouseEnter={mouseEnter}
-            onMouseLeave={mouseLeft}
-            width="500"
-            height="500">
-        </canvas>
+        <>
+            {canvasClearing? <input type="button" onClick={eraseCanvas} value="Clear"  />: null}
+            <canvas
+                ref={canvasRef}
+                onMouseDown={mouseDown}
+                onMouseMove={mouseMove}
+                onMouseEnter={mouseEnter}
+                onMouseLeave={mouseLeft}
+                width="500"
+                height="500">
+            </canvas>
+        </>
     );
 }

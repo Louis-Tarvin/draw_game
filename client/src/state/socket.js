@@ -33,7 +33,11 @@ export default class SocketManager {
         if (message[0] === 'd') {
             let p = message.slice(1).split(',').map(str => parseInt(str));
             if (this.drawHandler)
-                this.drawHandler.apply(undefined, p);
+                this.drawHandler.apply(undefined, [false, ...p]);
+        } else if (message[0] === 'b') {
+            if (this.drawHandler) {
+                this.drawHandler(true);
+            }
         } else if (message[0] === 'c') {
             let id = message.slice(1);
             this.store.dispatch(socketConnected(id))
@@ -41,8 +45,9 @@ export default class SocketManager {
             message = message.slice(1).split(',');
             this.store.dispatch(chatMessage(message[0], message[1]));
         } else if (message[0] === 'l') {
-            let word = message.slice(1);
-            this.store.dispatch(becomeLeader(word));
+            let canvasClearing = message[1] === 'T';
+            let word = message.slice(2);
+            this.store.dispatch(becomeLeader(canvasClearing, word));
             if(this.newRoundHandler)
                 this.newRoundHandler();
         } else if (message[0] === 'r') {
@@ -124,6 +129,10 @@ export default class SocketManager {
 
     sendDraw(params) {
         this.socket.send('d' + params.join(','));
+    }
+
+    clear() {
+        this.socket.send('c');
     }
 
     startGame(selectedWordpackIDs, timeLimit, canvasClearing) {

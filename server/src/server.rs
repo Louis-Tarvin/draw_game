@@ -16,10 +16,12 @@ pub enum Event {
     Message(usize, String),
     /// Draw event containing: (x1, y1, x2, y2, penSize)
     Draw(u32, u32, u32, u32, u32),
+    /// Clears the canvas
+    ClearCanvas,
     /// Start of a new round
     NewRound(usize),
     /// Assign the session a word to draw
-    NewLeader(String),
+    NewLeader(bool, String),
     /// Join a room. Contains the room code and user list
     EnterRoom(String, Vec<(usize, String)>),
     /// Leave a room
@@ -141,6 +143,17 @@ impl GameServer {
         }
     }
 
+    fn handle_clear(&mut self, key: &str, session_id: usize) {
+        if let Some(room) = self.rooms.get_mut(key) {
+            room.clear(session_id);
+        } else {
+            warn!(
+                "User {} tried to clear non-existant room {}",
+                session_id, key
+            );
+        }
+    }
+
     #[allow(clippy::map_entry)]
     fn connect(&mut self, recipient: Recipient<Event>) -> usize {
         loop {
@@ -252,6 +265,9 @@ impl Handler<ClientMessage> for GameServer {
             (Some(room_key), 's') => {
                 let lines: Vec<String> = msg.content.lines().skip(1).map(|x| x.to_string()).collect();
                 self.start_room(&room_key, msg.session_id, lines);
+            }
+            (Some(room_key), 'c') => {
+                self.handle_clear(&room_key, msg.session_id);
             }
             (None, 'j') => {
                 let data = msg.content.chars().skip(1).collect::<String>();

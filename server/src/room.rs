@@ -167,10 +167,18 @@ impl Room {
                         .map(|(_, x)| x.list_len())
                         .sum();
                     if self.num_words == 0 {
-                        warn!("tried to start game with no word packs in room {}", self.key);
+                        warn!(
+                            "tried to start game with no word packs in room {}",
+                            self.key
+                        );
                         return;
                     }
-                    trace!("room {} started with {} words, settings: {:?}", self.key, self.num_words, settings);
+                    trace!(
+                        "room {} started with {} words, settings: {:?}",
+                        self.key,
+                        self.num_words,
+                        settings
+                    );
                     self.settings = settings;
                     self.new_round();
                 } else {
@@ -248,15 +256,30 @@ impl Room {
             if self.occupants.is_empty() {
                 return true;
             }
-            if let RoomState::Round(RoundState { leader, .. }) = self.state {
-                if leader == session_id {
-                    trace!(
-                        "Current leader ({}) left room so new round in room {}",
-                        session_id,
-                        self.key
-                    );
-                    self.new_round();
+            match self.state {
+                RoomState::Lobby(LobbyState { host }) => {
+                    if host == session_id {
+                        let new_leader = self
+                            .queue
+                            .iter()
+                            .find(|id| self.occupants.get(id).is_some())
+                            .expect("user was in occupants but not queue");
+                        self.state = RoomState::Lobby(LobbyState { host: *new_leader });
+                        self.broadcast_event(Event::EnterLobby(*new_leader));
+                        self.send_settings_data(&self.occupants.get(new_leader).unwrap().0);
+                    }
                 }
+                RoomState::Round(RoundState { leader, .. }) => {
+                    if leader == session_id {
+                        trace!(
+                            "Current leader ({}) left room so new round in room {}",
+                            session_id,
+                            self.key
+                        );
+                        self.new_round();
+                    }
+                }
+                _ => {}
             }
         } else {
             warn!(
@@ -297,7 +320,10 @@ impl Room {
                     } else {
                         self.direct_message(
                             recipient,
-                            Event::NewLeader(self.get_word(word).clone()),
+                            Event::NewLeader(
+                                self.settings.allow_clear,
+                                self.get_word(word).clone(),
+                            ),
                         );
                     }
                 }
@@ -372,6 +398,32 @@ impl Room {
         } else {
             warn!(
                 "draw command sent by {} in invalid state in room {}",
+                session_id, self.key
+            );
+        }
+    }
+
+    pub fn clear(&mut self, session_id: usize) {
+        if let RoomState::Round(RoundState { leader, .. }) = self.state {
+            if leader != session_id {
+                warn!(
+                    "Uid {} in room {} tried to send clear command when {} was leader",
+                    session_id, self.key, leader
+                );
+                return;
+            }
+            if !self.settings.allow_clear {
+                warn!(
+                    "Uid {} in room {} tried to send clear command when not enabled",
+                    session_id, self.key
+                );
+                return;
+            }
+            self.broadcast_event(Event::ClearCanvas);
+            self.draw_history.clear();
+        } else {
+            warn!(
+                "clear command sent by {} in invalid state in room {}",
                 session_id, self.key
             );
         }

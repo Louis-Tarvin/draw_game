@@ -30,8 +30,8 @@ export function winner(winnerID, word) {
     return { type: 'WINNER', winnerID, word };
 }
 
-export function becomeLeader(word) {
-    return { type: 'BECOME_LEADER', word };
+export function becomeLeader(canvasClearing, word) {
+    return { type: 'BECOME_LEADER', canvasClearing, word };
 }
 
 export function becomeGuesser(leaderID) {
