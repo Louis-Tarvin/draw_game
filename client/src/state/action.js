@@ -14,6 +14,14 @@ export function leftRoom() {
     return { type: 'LEFT_ROOM' };
 }
 
+export function enterLobby(hostID) {
+    return { type: 'ENTER_LOBBY', hostID };
+}
+
+export function receiveSettingsData(wordpacks) {
+    return { type: 'RECEIVE_SETTINGS', wordpacks };
+}
+
 export function chatMessage(userID, content) {
     return { type: 'CHAT_MESSAGE', message: { userID, content } };
 }
@@ -23,9 +31,14 @@ export function winner(winnerID, rawWord) {
     return { type: 'WINNER', winnerID, word };
 }
 
-export function becomeLeader(rawWord) {
+export function timeout(rawWord) {
     const word = rawWord[0].toUpperCase() + rawWord.slice(1);
-    return { type: 'BECOME_LEADER', word };
+    return { type: 'TIMEOUT', word };
+}
+
+export function becomeLeader(canvasClearing, rawWord) {
+    const word = rawWord[0].toUpperCase() + rawWord.slice(1);
+    return { type: 'BECOME_LEADER', canvasClearing, word };
 }
 
 export function becomeGuesser(leaderID) {

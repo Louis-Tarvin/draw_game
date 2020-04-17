@@ -3,12 +3,15 @@ import {
     socketDisconnected,
     joinedRoom,
     leftRoom,
+    enterLobby,
+    receiveSettingsData,
     becomeLeader,
     becomeGuesser,
     chatMessage,
     userJoinedRoom,
     userLeftRoom,
-    winner
+    winner,
+    timeout
 } from './action';
 
 export default class SocketManager {
@@ -28,10 +31,15 @@ export default class SocketManager {
 
     handleSocketMessage(e) {
         let message = e.data;
+        let i;
         if (message[0] === 'd') {
             let p = message.slice(1).split(',').map(str => parseInt(str));
             if (this.drawHandler)
-                this.drawHandler.apply(undefined, p);
+                this.drawHandler.apply(undefined, [false, ...p]);
+        } else if (message[0] === 'b') {
+            if (this.drawHandler) {
+                this.drawHandler(true);
+            }
         } else if (message[0] === 'c') {
             let id = message.slice(1);
             this.store.dispatch(socketConnected(id))
@@ -39,8 +47,9 @@ export default class SocketManager {
             message = message.slice(1).split(',');
             this.store.dispatch(chatMessage(message[0], message[1]));
         } else if (message[0] === 'l') {
-            let word = message.slice(1);
-            this.store.dispatch(becomeLeader(word));
+            let canvasClearing = message[1] === 'T';
+            let word = message.slice(2);
+            this.store.dispatch(becomeLeader(canvasClearing, word));
             if(this.newRoundHandler)
                 this.newRoundHandler();
         } else if (message[0] === 'r') {
@@ -52,7 +61,7 @@ export default class SocketManager {
             let parts = message.slice(1).split(',');
             let code = parts.shift();
             let users = {};
-            for (var i = 0; i < parts.length; i+= 2) {
+            for (i = 0; i < parts.length; i+= 2) {
                 users[parts[i]] = {
                     username: parts[i+1],
                     id: parts[i],
@@ -68,8 +77,26 @@ export default class SocketManager {
         } else if (message[0] === 'q') {
             this.store.dispatch(leftRoom());
         } else if (message[0] === 'w') {
-            var data = message.slice(1).split(',');
-            this.store.dispatch(winner(data[0], data[1]));
+            if (message[1] === 'T') {
+                let data = message.slice(2).split(',');
+                this.store.dispatch(winner(data[0], data[1]));
+            } else {
+                this.store.dispatch(timeout(message.slice(2)));
+            }
+        } else if (message[0] === 'o') {
+            let userID = message.slice(1);
+            this.store.dispatch(enterLobby(userID));
+        } else if (message[0] === 's') {
+            let lines = message.split('\n').slice(1);
+            let wordpacks = [];
+            for (i = 0; i < lines.length; i++) {
+                let wordpack = lines[i].split(',');
+                let wordpackID = wordpack[0];
+                let wordpackName = wordpack[1];
+                let wordpackDescription = wordpack.slice(2).join(',');
+                wordpacks.push({ id: wordpackID, name: wordpackName, description: wordpackDescription });
+            }
+            this.store.dispatch(receiveSettingsData(wordpacks));
         } else {
             console.log(message);
         }
@@ -108,5 +135,13 @@ export default class SocketManager {
 
     sendDraw(params) {
         this.socket.send('d' + params.join(','));
+    }
+
+    clear() {
+        this.socket.send('c');
+    }
+
+    startGame(selectedWordpackIDs, timeLimit, canvasClearing) {
+        this.socket.send(['s', selectedWordpackIDs.join(','), timeLimit, canvasClearing].join('\n'));
     }
 }

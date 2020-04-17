@@ -6,7 +6,7 @@ import useInput from 'common/useInput';
 import './Landing.css';
 
 function EnterRoom({ username, socketManager, enabled }) {
-    const [roomCode, roomCodeField] = useInput({ placeholder: 'Room code' });
+    const [roomCode, roomCodeField] = useInput({ placeholder: 'Room code', maxlength: 5 });
     const disabled = useSelector(state => state.socketState !== 'connected');
 
     const joinRoomSubmit = e => {
@@ -39,7 +39,7 @@ function EnterRoom({ username, socketManager, enabled }) {
 
 export default function Landing({ socketManager, isHidden }) {
     const usernameInputRef = useRef(null);
-    const [username, usernameField] = useInput({ placeholder: 'Username', ref: usernameInputRef });
+    const [username, usernameField] = useInput({ placeholder: 'Username', ref: usernameInputRef, maxlength: 14 });
     const usernameIsValid = checkUsername(username);
 
     useEffect(() => {

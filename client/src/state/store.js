@@ -15,6 +15,7 @@ function stateManager(state = {}, action) {
             return { socketID: null, room: null, socketState: 'disconnected' };
         case 'JOINED_ROOM':
             console.debug('Joined room', action.roomCode, 'with users', action.users);
+            action.users[state.socketID].isCurrentUser = true;
             let messages = [{ type: 'initial_join', roomCode: action.roomCode, users: action.users }];
             newState = { ...state };
             newState.room = { users: action.users, code: action.roomCode, messages };
@@ -23,6 +24,19 @@ function stateManager(state = {}, action) {
             console.debug('Left room');
             newState = { ...state };
             newState.room = null;
+            return newState;
+        case 'ENTER_LOBBY':
+            console.debug('entered lobby');
+            newState = { ...state };
+            newState.room = { ...state.room };
+            newState.room.state = 'lobby';
+            newState.room.host = state.room.users[action.hostID];
+            return newState;
+        case 'RECEIVE_SETTINGS':
+            console.debug('received settings data');
+            newState = { ...state };
+            newState.room = { ...state.room };
+            newState.room.wordpacks = action.wordpacks;
             return newState;
         case 'CHAT_MESSAGE':
             newState = { ...state };
@@ -33,23 +47,32 @@ function stateManager(state = {}, action) {
         case 'WINNER':
             newState = { ...state };
             newState.room = { ...newState.room };
+            newState.room.state = 'winner';
+            newState.room.winner = state.room.users[action.winnerID];
             const winMessage = { type: 'winner', winner: state.room.users[action.winnerID], word: action.word };
             newState.room.messages = pushItem(newState.room.messages, winMessage);
+            return newState;
+        case 'TIMEOUT':
+            newState = { ...state };
+            newState.room = { ...newState.room };
+            newState.room.state = 'timeout';
+            const timeoutMessage = { type: 'timeout', word: action.word };
+            newState.room.messages = pushItem(newState.room.messages, timeoutMessage);
             return newState;
         case 'BECOME_LEADER':
             console.debug('Became leader drawing', action.word);
             newState = { ...state };
             newState.room = { ...newState.room };
+            newState.room.state = 'leader';
             newState.room.word = action.word;
-            newState.room.isLeader = true;
+            newState.room.canvasClearing = action.canvasClearing;
             newState.room.leader = state.room.users[state.socketID];
             return newState;
         case 'BECOME_GUESSER':
             console.debug('Became guesser leaderid =', action.leaderID);
             newState = { ...state };
             newState.room = { ...newState.room };
-            newState.room.word = null;
-            newState.room.isLeader = false;
+            newState.room.state = 'guesser';
             newState.room.leader = state.room.users[action.leaderID];
             return newState;
         case 'USER_JOINED':
@@ -75,7 +98,7 @@ function stateManager(state = {}, action) {
             newState.room.messages = pushItem(newState.room.messages, leaveMessage);
             return newState;
         default:
-            console.warn('Unhandled action in state', action, 'state was:', state);
+            console.debug('Unhandled action in state', action, 'state was:', state);
             return state;
     }
 }
