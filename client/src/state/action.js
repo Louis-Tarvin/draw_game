@@ -30,6 +30,10 @@ export function winner(winnerID, word) {
     return { type: 'WINNER', winnerID, word };
 }
 
+export function timeout(word) {
+    return { type: 'TIMEOUT', word };
+}
+
 export function becomeLeader(canvasClearing, word) {
     return { type: 'BECOME_LEADER', canvasClearing, word };
 }

@@ -43,6 +43,12 @@ function Message({ message, users }) {
                     left the room
                 </div>
             );
+        case 'timeout':
+            return (
+                <div className="message timeout">
+                    Everyone ran out of time! The word was {message.word}
+                </div>
+            );
         default:
             console.warn('Unhandled message type');
             return (<div className="message error">Unhandled message type</div>);

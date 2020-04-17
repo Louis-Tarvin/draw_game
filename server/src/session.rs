@@ -75,7 +75,10 @@ impl Handler<Event> for Session {
             Event::NewLeader(canvas_clearing, word) => {
                 format!("l{}{}", if canvas_clearing { 'T' } else { 'F' }, word)
             }
-            Event::Winner(session_id, word) => format!("w{},{}", session_id, word),
+            Event::Winner(winner, word) => match winner {
+                Some(id) => format!("wT{},{}", id, word),
+                None => format!("wF{}", word),
+            },
             Event::UserJoin(session_id, username) => format!("j{},{}", session_id, username),
             Event::UserGone(session_id) => format!("g{}", session_id),
             Event::EnterLobby(host_id) => format!("o{}", host_id),

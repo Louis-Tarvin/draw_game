@@ -2,7 +2,6 @@ use actix::prelude::*;
 use rand::{distributions::Alphanumeric, prelude::*, rngs::ThreadRng};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
 
 use crate::word_pack::{load_word_packs, WordPack};
 use crate::Room;
@@ -27,7 +26,7 @@ pub enum Event {
     /// Leave a room
     LeaveRoom,
     /// When a user has won. Contains the username and word guessed
-    Winner(usize, String),
+    Winner(Option<usize>, String),
     /// When another user joins
     UserJoin(usize, String),
     /// When another user leaves
@@ -113,10 +112,10 @@ impl GameServer {
         }
     }
 
-    fn leave_room(&mut self, key: &str, session_id: usize) {
+    fn leave_room(&mut self, key: &str, session_id: usize, ctx: &mut Context<GameServer>) {
         if let Some(room) = self.rooms.get_mut(key) {
             // If room after the session leaving is now empty, delete it
-            if room.leave(session_id) {
+            if room.leave(session_id, ctx) {
                 self.rooms.remove(key);
                 trace!(
                     "Room {} is empty so removing it, {} room(s) left",
@@ -132,9 +131,9 @@ impl GameServer {
         }
     }
 
-    fn start_room(&mut self, key: &str, session_id: usize, lines: Vec<String>) {
+    fn start_room(&mut self, key: &str, session_id: usize, lines: Vec<String>, ctx: &mut Context<GameServer>) {
         if let Some(room) = self.rooms.get_mut(key) {
-            room.start(session_id, lines);
+            room.start(session_id, lines, ctx);
         } else {
             warn!(
                 "User {} tried to start non-existant room {}",
@@ -151,6 +150,14 @@ impl GameServer {
                 "User {} tried to clear non-existant room {}",
                 session_id, key
             );
+        }
+    }
+
+    pub fn round_timeout(&mut self, key: &str, round_id: usize, ctx: &mut Context<GameServer>) {
+        if let Some(room) = self.rooms.get_mut(key) {
+            room.round_timeout(round_id, ctx);
+        } else {
+            trace!("Round timeout on non-existant room {}", key);
         }
     }
 
@@ -179,9 +186,9 @@ impl GameServer {
         );
     }
 
-    fn new_round(&mut self, room_key: String) {
+    pub fn new_round(&mut self, room_key: String, ctx: &mut Context<GameServer>) {
         if let Some(room) = self.rooms.get_mut(&room_key) {
-            room.new_round();
+            room.new_round(ctx);
         }
     }
 }
@@ -234,12 +241,7 @@ impl Handler<ClientMessage> for GameServer {
                 }
 
                 if let Some(room) = self.rooms.get_mut(&room_key) {
-                    if room.handle_guess(msg.session_id, chat) {
-                        let key = room_key.clone();
-                        ctx.run_later(Duration::new(5, 0), move |act, _ctx| {
-                            act.new_round(key);
-                        });
-                    }
+                    room.handle_guess(msg.session_id, chat, ctx);
                 } else {
                     warn!(
                         "User {} was marked as being in non-existant room {} when sending message",
@@ -260,11 +262,11 @@ impl Handler<ClientMessage> for GameServer {
                 }
             }
             (Some(room_key), 'q') => {
-                self.leave_room(&room_key, msg.session_id);
+                self.leave_room(&room_key, msg.session_id, ctx);
             }
             (Some(room_key), 's') => {
                 let lines: Vec<String> = msg.content.lines().skip(1).map(|x| x.to_string()).collect();
-                self.start_room(&room_key, msg.session_id, lines);
+                self.start_room(&room_key, msg.session_id, lines, ctx);
             }
             (Some(room_key), 'c') => {
                 self.handle_clear(&room_key, msg.session_id);
@@ -320,10 +322,10 @@ impl Handler<ConnectMessage> for GameServer {
 impl Handler<DisconnectMessage> for GameServer {
     type Result = ();
 
-    fn handle(&mut self, msg: DisconnectMessage, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: DisconnectMessage, ctx: &mut Context<Self>) {
         self.disconnect(msg.session_id);
         if let Some(room) = msg.room {
-            self.leave_room(&room, msg.session_id);
+            self.leave_room(&room, msg.session_id, ctx);
         }
     }
 }

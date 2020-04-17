@@ -109,17 +109,7 @@ canvas {
     color: grey;
 }
 
-.winner {
-    color: grey;
-    font-style: italic;
-}
-
-.user-joined {
-    color: grey;
-    font-style: italic;
-}
-
-.user-left {
+.winner, .user-joined, .user-left, .timeout {
     color: grey;
     font-style: italic;
 }

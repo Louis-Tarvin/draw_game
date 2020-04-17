@@ -1,11 +1,12 @@
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
+use std::time::Duration;
 
 use actix::prelude::*;
 use log::{error, trace, warn};
 use rand::prelude::*;
 
-use crate::{word_pack::WordPack, Event};
+use crate::{server::GameServer, word_pack::WordPack, Event};
 
 struct LobbyState {
     pub host: usize,
@@ -18,7 +19,7 @@ struct RoundState {
 
 struct WinnerState {
     pub word: (usize, usize),
-    pub winner: usize,
+    pub winner: Option<usize>,
     pub alternate: Option<usize>,
 }
 
@@ -71,6 +72,7 @@ pub struct Room {
     excluded_words: VecDeque<usize>,
     max_excluded_words: usize,
     draw_history: Vec<(u32, u32, u32, u32, u32)>,
+    round_id: usize,
 }
 impl Room {
     pub fn new(
@@ -96,6 +98,7 @@ impl Room {
             queue,
             excluded_words: VecDeque::new(),
             draw_history: Vec::new(),
+            round_id: 0,
         };
         room.direct_message(
             &recipient,
@@ -155,7 +158,7 @@ impl Room {
         self.word_packs[word.0].get_word(word.1)
     }
 
-    pub fn start(&mut self, session_id: usize, lines: Vec<String>) {
+    pub fn start(&mut self, session_id: usize, lines: Vec<String>, ctx: &mut Context<GameServer>) {
         if let RoomState::Lobby(LobbyState { host }) = self.state {
             if session_id == host {
                 if let Some(settings) = Settings::parse_from_lines(lines, self.word_packs.len()) {
@@ -180,7 +183,7 @@ impl Room {
                         settings
                     );
                     self.settings = settings;
-                    self.new_round();
+                    self.new_round(ctx);
                 } else {
                     warn!(
                         "session id {} sent invalid settings in room {}",
@@ -248,7 +251,7 @@ impl Room {
         }
     }
 
-    pub fn leave(&mut self, session_id: usize) -> bool {
+    pub fn leave(&mut self, session_id: usize, ctx: &mut Context<GameServer>) -> bool {
         trace!("{} leaving room {}", session_id, self.key);
         if let Some((recipient, _)) = self.occupants.remove(&session_id) {
             self.direct_message(&recipient, Event::LeaveRoom);
@@ -276,7 +279,7 @@ impl Room {
                             session_id,
                             self.key
                         );
-                        self.new_round();
+                        self.new_round(ctx);
                     }
                 }
                 _ => {}
@@ -290,7 +293,12 @@ impl Room {
         false
     }
 
-    fn end_round(&mut self, winner: usize, alternate: Option<usize>) {
+    fn end_round(
+        &mut self,
+        winner: Option<usize>,
+        alternate: Option<usize>,
+        ctx: &mut Context<GameServer>,
+    ) {
         if let RoomState::Round(RoundState { word, leader }) = self.state {
             self.state = RoomState::Winner(WinnerState {
                 word,
@@ -298,12 +306,18 @@ impl Room {
                 alternate,
             });
             self.queue.push_back(leader);
+            self.broadcast_event(Event::Winner(winner, self.get_word(word).clone()));
+            let key = self.key.clone();
+            ctx.run_later(Duration::new(5, 0), move |act, ctx| {
+                act.new_round(key, ctx);
+            });
         } else {
             error!("end_round called with invalid state in room {}", self.key);
         }
     }
 
-    pub fn new_round(&mut self) {
+    pub fn new_round(&mut self, ctx: &mut Context<GameServer>) {
+        self.round_id += 1;
         let word = self.choose_new_word();
 
         self.draw_history.clear();
@@ -328,6 +342,14 @@ impl Room {
                     }
                 }
 
+                if self.settings.round_timer {
+                    let round_id = self.round_id;
+                    let key = self.key.clone();
+                    ctx.run_later(Duration::from_secs(120), move |server, ctx| {
+                        server.round_timeout(&key, round_id, ctx);
+                    });
+                }
+
                 trace!(
                     "Room {} has new round with word {:?}, leader {}",
                     self.key,
@@ -340,15 +362,27 @@ impl Room {
         error!("Room {} had no possible leader for new round", self.key);
     }
 
-    pub fn handle_guess(&mut self, session_id: usize, message: String) -> bool {
+    pub fn round_timeout(&mut self, round_id: usize, ctx: &mut Context<GameServer>) {
+        if let RoomState::Round(RoundState { .. }) = self.state {
+            if round_id == self.round_id {
+                trace!("Room {} has timed out", self.key);
+                self.end_round(None, None, ctx);
+            }
+        }
+    }
+
+    pub fn handle_guess(
+        &mut self,
+        session_id: usize,
+        message: String,
+        ctx: &mut Context<GameServer>,
+    ) {
         if let RoomState::Round(RoundState { word, leader }) = self.state {
             if session_id != leader {
                 self.broadcast_event(Event::Message(session_id, message.clone()));
                 if self.word_packs[word.0].word_matches(word.1, &message.trim().to_lowercase()) {
-                    self.broadcast_event(Event::Winner(session_id, self.get_word(word).clone()));
                     //TODO: sort out alternate
-                    self.end_round(session_id, None);
-                    return true;
+                    self.end_round(Some(session_id), None, ctx);
                 }
             } else {
                 warn!(
@@ -359,7 +393,6 @@ impl Room {
         } else {
             self.broadcast_event(Event::Message(session_id, message));
         }
-        false
     }
 
     pub fn handle_draw(&mut self, session_id: usize, data: String) {

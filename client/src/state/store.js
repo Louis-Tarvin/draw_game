@@ -52,6 +52,13 @@ function stateManager(state = {}, action) {
             const winMessage = { type: 'winner', winner: state.room.users[action.winnerID], word: action.word };
             newState.room.messages = pushItem(newState.room.messages, winMessage);
             return newState;
+        case 'TIMEOUT':
+            newState = { ...state };
+            newState.room = { ...newState.room };
+            newState.room.state = 'timeout';
+            const timeoutMessage = { type: 'timeout', word: action.word };
+            newState.room.messages = pushItem(newState.room.messages, timeoutMessage);
+            return newState;
         case 'BECOME_LEADER':
             console.debug('Became leader drawing', action.word);
             newState = { ...state };
@@ -91,7 +98,7 @@ function stateManager(state = {}, action) {
             newState.room.messages = pushItem(newState.room.messages, leaveMessage);
             return newState;
         default:
-            console.warn('Unhandled action in state', action, 'state was:', state);
+            console.debug('Unhandled action in state', action, 'state was:', state);
             return state;
     }
 }

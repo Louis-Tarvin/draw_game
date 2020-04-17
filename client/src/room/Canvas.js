@@ -82,7 +82,7 @@ export default function Canvas({ socketManager, isLeader, clearButtonRef }) {
         return () => {
             socketManager.setDrawHandler(null);
         }
-    }, [drawCleanLine, socketManager, isLeader]);
+    }, [drawCleanLine, socketManager, isLeader, clearCanvas]);
 
     // Consider whether this is the correct control flow, feels a bit hacky
     useEffect(() => {
@@ -155,7 +155,7 @@ export default function Canvas({ socketManager, isLeader, clearButtonRef }) {
 
     return (
         <>
-            {canvasClearing? <input type="button" onClick={eraseCanvas} value="Clear"  />: null}
+            {canvasClearing? <input type="submit" onClick={eraseCanvas} value="Clear"  />: null}
             <canvas
                 ref={canvasRef}
                 onMouseDown={mouseDown}

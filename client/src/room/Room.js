@@ -53,6 +53,9 @@ export default function Room({ socketManager }) {
                 title = (<h2 className="title">{winner.username} correctly guessed the word</h2>);
             }
             break;
+        case 'timeout':
+            title = (<h2 className="title">Time has run out! The word was: {word}</h2>)
+            break;
         default:
     }
 
