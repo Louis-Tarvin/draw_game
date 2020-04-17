@@ -26,15 +26,18 @@ export function chatMessage(userID, content) {
     return { type: 'CHAT_MESSAGE', message: { userID, content } };
 }
 
-export function winner(winnerID, word) {
+export function winner(winnerID, rawWord) {
+    const word = rawWord[0].toUpperCase() + rawWord.slice(1);
     return { type: 'WINNER', winnerID, word };
 }
 
-export function timeout(word) {
+export function timeout(rawWord) {
+    const word = rawWord[0].toUpperCase() + rawWord.slice(1);
     return { type: 'TIMEOUT', word };
 }
 
-export function becomeLeader(canvasClearing, word) {
+export function becomeLeader(canvasClearing, rawWord) {
+    const word = rawWord[0].toUpperCase() + rawWord.slice(1);
     return { type: 'BECOME_LEADER', canvasClearing, word };
 }
 
