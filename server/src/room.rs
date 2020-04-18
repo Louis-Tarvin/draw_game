@@ -213,6 +213,12 @@ impl Room {
             return;
         }
 
+        if self.occupants.values().any(|(_, u)| *u == username) {
+            trace!("Username {} already exists in room {}", username, self.key);
+            self.direct_message(&recipient, Event::UsernameExists(username));
+            return;
+        }
+
         trace!("{} ({}) joining room {}", username, session_id, self.key);
         self.broadcast_event(Event::UserJoin(session_id, username.clone()));
         self.occupants

@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::word_pack::{load_word_packs, WordPack};
 use crate::Room;
 
-use log::{debug, info, trace, warn};
+use log::{info, trace, warn};
 
 #[derive(Message, Clone)]
 #[rtype(result = "()")]
@@ -23,6 +23,10 @@ pub enum Event {
     NewLeader(bool, String),
     /// Join a room. Contains the room code and user list
     EnterRoom(String, Vec<(usize, String)>),
+    /// Error that indicates that a username already exists within a room
+    UsernameExists(String),
+    /// Error that indicates that a room key doesn't exist
+    NonExistantRoom(String),
     /// Leave a room
     LeaveRoom,
     /// When a user has won. Contains the username and word guessed
@@ -97,15 +101,16 @@ impl GameServer {
     }
 
     fn join_room(&mut self, key: &str, username: String, session_id: usize) {
+        let recipient = self
+            .recipients
+            .get(&session_id)
+            .expect("session_id did not exist");
         if let Some(room) = self.rooms.get_mut(key) {
-            let recipient = self
-                .recipients
-                .get(&session_id)
-                .expect("session_id did not exist");
             room.join(session_id, recipient.clone(), username);
         } else {
             // Perfectly normal user behaviour (e.g. enter wrong key by accident)
-            debug!(
+            let _ = recipient.do_send(Event::NonExistantRoom(key.to_string()));
+            trace!(
                 "User {} ({}) tried to join non-existant room {}",
                 username, session_id, key
             );

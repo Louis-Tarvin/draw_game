@@ -21,6 +21,7 @@ export default class SocketManager {
         this.store = store;
         this.drawHandler = null;
         this.newRoundHandler = null;
+        this.joinRoomErrorHandler = null;
     }
 
     connect() {
@@ -97,6 +98,12 @@ export default class SocketManager {
                 wordpacks.push({ id: wordpackID, name: wordpackName, description: wordpackDescription });
             }
             this.store.dispatch(receiveSettingsData(wordpacks));
+        } else if (message[0] === 'f') {
+            if (message[1] === 'u') {
+                this.joinRoomErrorHandler(null, message.slice(2));
+            } else {
+                this.joinRoomErrorHandler(message.slice(2), null);
+            }
         } else {
             console.log(message);
         }
@@ -115,6 +122,10 @@ export default class SocketManager {
 
     setNewRoundHandler(callback) {
         this.newRoundHandler = callback;
+    }
+
+    setJoinRoomErrorHandler(callback) {
+        this.joinRoomErrorHandler = callback;
     }
 
     sendChat(message) {
