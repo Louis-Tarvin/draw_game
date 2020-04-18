@@ -16,7 +16,7 @@ function useCanvasContext() {
     return [context, canvas, canvasRef];
 }
 
-export default function Canvas({ socketManager, isLeader, clearButtonRef }) {
+export default function Canvas({ socketManager, isLeader }) {
     const [context, canvas, canvasRef] = useCanvasContext();
     const [penDown, setPenDown] = useState(false);
     const [penLeft, setPenLeft] = useState(false);
@@ -155,7 +155,7 @@ export default function Canvas({ socketManager, isLeader, clearButtonRef }) {
 
     return (
         <>
-            {canvasClearing? <input type="submit" onClick={eraseCanvas} value="Clear"  />: null}
+            {canvasClearing && isLeader? <input type="submit" onClick={eraseCanvas} value="Clear"  />: null}
             <canvas
                 ref={canvasRef}
                 onMouseDown={mouseDown}
