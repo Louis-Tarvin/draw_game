@@ -16,6 +16,35 @@ function useCanvasContext() {
     return [context, canvas, canvasRef];
 }
 
+function Pen({ penSize, x, y }) {
+
+    const style = {
+        width: penSize * 2,
+        height: penSize * 2,
+        top: y - penSize,
+        left: x - penSize
+    };
+
+    return (
+        <div className="pen" style={style}></div>
+    );
+}
+
+function PenChanger({ penSize, setPenSize }) {
+
+    return (
+        <div className="pen-changer">
+            <input
+                type="range"
+                min="1"
+                max="10"
+                value={penSize}
+                onChange={e => setPenSize(e.target.value)}
+            />
+        </div>
+    );
+}
+
 export default function Canvas({ socketManager, isLeader }) {
     const [context, canvas, canvasRef] = useCanvasContext();
     const [penDown, setPenDown] = useState(false);
@@ -54,6 +83,7 @@ export default function Canvas({ socketManager, isLeader }) {
         drawLine.apply(null, [startX, startY, endX, endY, penSize]
             .map(x => Math.round(x))
             .map(x => x < 0? 0: x)
+            .map(x => x > 500? 500: x)
         );
     }, [drawLine]);
 
@@ -102,13 +132,13 @@ export default function Canvas({ socketManager, isLeader }) {
     }, [setPenDown]);
 
     const mouseMove = useCallback(e => {
-        if (isLeader && penDown && !penLeft && canvas) {
+        if (canvas) {
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-
-            drawCleanLine(x, y, prevX, prevY, penSize);
-
+            if (isLeader && penDown && !penLeft) {
+                drawCleanLine(x, y, prevX, prevY, penSize);
+            }
             setPrevX(x);
             setPrevY(y);
         }
@@ -157,16 +187,24 @@ export default function Canvas({ socketManager, isLeader }) {
 
     return (
         <>
-            {canvasClearing && isLeader? <input className="clear-button" type="submit" onClick={eraseCanvas} value="Clear"  />: null}
-            <canvas
-                ref={canvasRef}
-                onMouseDown={mouseDown}
-                onMouseMove={mouseMove}
-                onMouseEnter={mouseEnter}
-                onMouseLeave={mouseLeft}
-                width="500"
-                height="500">
-            </canvas>
+            <div className={isLeader? "draw-toolbar": "draw-toolbar hide"}>
+                {canvasClearing? <input className="clear-button" type="submit" onClick={eraseCanvas} value="Clear canvas"  />: null}
+                <p className="pen-changer-label" >pen size: </p>
+                <PenChanger penSize={penSize} setPenSize={setPenSize} />
+            </div>
+            <div className={isLeader? "canvas-wrapper hide-cursor": "canvas-wrapper"}>
+                {isLeader? <Pen {...{ penSize, x: prevX, y: prevY }} />: null}
+                <canvas
+                    ref={canvasRef}
+                    onMouseDown={mouseDown}
+                    onMouseMove={mouseMove}
+                    onMouseEnter={mouseEnter}
+                    onMouseLeave={mouseLeft}
+                    width="500"
+                    height="500">
+                </canvas>
+            </div>
+            <input className="download-button" type="submit" value="Download drawing" />
         </>
     );
 }
