@@ -69,6 +69,11 @@ canvas {
     display: inline-block;
 }
 
+.clear-button {
+    display: block;
+    margin: 10px auto;
+}
+
 /* CHAT: */
 
 .chat-card {

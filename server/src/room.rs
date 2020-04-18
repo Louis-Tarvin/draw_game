@@ -18,8 +18,9 @@ struct RoundState {
 }
 
 struct WinnerState {
-    pub word: (usize, usize),
     pub winner: Option<usize>,
+    pub points: usize,
+    pub word: (usize, usize),
     pub alternate: Option<usize>,
 }
 
@@ -63,7 +64,7 @@ enum RoomState {
 pub struct Room {
     state: RoomState,
     key: String,
-    occupants: HashMap<usize, (Recipient<Event>, String)>,
+    occupants: HashMap<usize, (Recipient<Event>, String, usize)>,
     word_packs: Arc<Vec<WordPack>>,
     num_words: usize,
     settings: Settings,
@@ -83,7 +84,7 @@ impl Room {
         username: String,
     ) -> Room {
         let mut occupants = HashMap::new();
-        occupants.insert(session_id, (recipient.clone(), username.clone()));
+        occupants.insert(session_id, (recipient.clone(), username.clone(), 0));
         let mut queue = VecDeque::new();
         queue.push_back(session_id);
         let room = Room {
@@ -119,7 +120,7 @@ impl Room {
     }
 
     fn broadcast_event(&self, event: Event) {
-        for (recipient, _) in self.occupants.values() {
+        for (recipient, _, _) in self.occupants.values() {
             self.direct_message(recipient, event.clone());
         }
     }
@@ -156,6 +157,9 @@ impl Room {
 
     fn get_word(&self, word: (usize, usize)) -> &String {
         self.word_packs[word.0].get_word(word.1)
+    }
+    fn get_alternate(&self, word: (usize, usize), alternate: usize) -> &String {
+        self.word_packs[word.0].get_alternate(word.1, alternate)
     }
 
     pub fn start(&mut self, session_id: usize, lines: Vec<String>, ctx: &mut Context<GameServer>) {
@@ -213,7 +217,7 @@ impl Room {
             return;
         }
 
-        if self.occupants.values().any(|(_, u)| *u == username) {
+        if self.occupants.values().any(|(_, u, _)| *u == username) {
             trace!("Username {} already exists in room {}", username, self.key);
             self.direct_message(&recipient, Event::UsernameExists(username));
             return;
@@ -222,7 +226,7 @@ impl Room {
         trace!("{} ({}) joining room {}", username, session_id, self.key);
         self.broadcast_event(Event::UserJoin(session_id, username.clone()));
         self.occupants
-            .insert(session_id, (recipient.clone(), username));
+            .insert(session_id, (recipient.clone(), username, 0));
         self.direct_message(
             &recipient,
             Event::EnterRoom(self.key.to_string(), self.get_user_list()),
@@ -235,10 +239,20 @@ impl Room {
                 self.direct_message(&recipient, Event::NewRound(leader));
                 self.send_draw_history(session_id, &recipient);
             }
-            RoomState::Winner(WinnerState { word, winner, .. }) => {
+            RoomState::Winner(WinnerState {
+                word,
+                winner,
+                alternate,
+                points,
+            }) => {
                 self.direct_message(
                     &recipient,
-                    Event::Winner(winner, self.get_word(word).clone()),
+                    Event::Winner(
+                        winner,
+                        points,
+                        self.get_word(word).clone(),
+                        alternate.map(|x| self.get_alternate(word, x).clone()),
+                    ),
                 );
                 self.send_draw_history(session_id, &recipient);
             }
@@ -259,7 +273,7 @@ impl Room {
 
     pub fn leave(&mut self, session_id: usize, ctx: &mut Context<GameServer>) -> bool {
         trace!("{} leaving room {}", session_id, self.key);
-        if let Some((recipient, _)) = self.occupants.remove(&session_id) {
+        if let Some((recipient, _, _)) = self.occupants.remove(&session_id) {
             self.direct_message(&recipient, Event::LeaveRoom);
             self.broadcast_event(Event::UserGone(session_id));
             if self.occupants.is_empty() {
@@ -302,17 +316,24 @@ impl Room {
     fn end_round(
         &mut self,
         winner: Option<usize>,
+        points: usize,
         alternate: Option<usize>,
         ctx: &mut Context<GameServer>,
     ) {
         if let RoomState::Round(RoundState { word, leader }) = self.state {
             self.state = RoomState::Winner(WinnerState {
-                word,
                 winner,
+                points,
+                word,
                 alternate,
             });
             self.queue.push_back(leader);
-            self.broadcast_event(Event::Winner(winner, self.get_word(word).clone()));
+            self.broadcast_event(Event::Winner(
+                winner,
+                points,
+                self.get_word(word).clone(),
+                alternate.map(|x| self.get_alternate(word, x).clone()),
+            ));
             let key = self.key.clone();
             ctx.run_later(Duration::new(5, 0), move |act, ctx| {
                 act.new_round(key, ctx);
@@ -334,7 +355,7 @@ impl Room {
                     leader: new_leader,
                 });
 
-                for (session_id, (recipient, _)) in self.occupants.iter() {
+                for (session_id, (recipient, _, _)) in self.occupants.iter() {
                     if *session_id != new_leader {
                         self.direct_message(recipient, Event::NewRound(new_leader));
                     } else {
@@ -372,7 +393,7 @@ impl Room {
         if let RoomState::Round(RoundState { .. }) = self.state {
             if round_id == self.round_id {
                 trace!("Room {} has timed out", self.key);
-                self.end_round(None, None, ctx);
+                self.end_round(None, 0, None, ctx);
             }
         }
     }
@@ -386,9 +407,16 @@ impl Room {
         if let RoomState::Round(RoundState { word, leader }) = self.state {
             if session_id != leader {
                 self.broadcast_event(Event::Message(session_id, message.clone()));
-                if self.word_packs[word.0].word_matches(word.1, &message.trim().to_lowercase()) {
-                    //TODO: sort out alternate
-                    self.end_round(Some(session_id), None, ctx);
+                let (matches, alternate) =
+                    self.word_packs[word.0].word_matches(word.1, &message.trim().to_lowercase());
+                if matches {
+                    if let Some((_, _, points)) = self.occupants.get_mut(&session_id) {
+                        *points += 1;
+                        let points = *points;
+                        self.end_round(Some(session_id), points, alternate, ctx);
+                    } else {
+                        warn!("winner {} wasn't in room {}", session_id, self.key);
+                    }
                 }
             } else {
                 warn!(
@@ -471,7 +499,7 @@ impl Room {
     fn get_user_list(&self) -> Vec<(usize, String)> {
         self.occupants
             .iter()
-            .map(|(session_id, (_, username))| (*session_id, username.clone()))
+            .map(|(session_id, (_, username, _))| (*session_id, username.clone()))
             .collect()
     }
 }
