@@ -29,7 +29,6 @@ export default function Canvas({ socketManager, isLeader }) {
     const [penSize, setPenSize] = useState(2);
 
     const drawLine = useCallback((startX, startY, endX, endY, penSize) => {
-        //TODO: fix race condition (maybe prerender canvas)
         if (!context) {
             console.error('Context wasn\'t available during line drawing');
             return;
@@ -69,20 +68,23 @@ export default function Canvas({ socketManager, isLeader }) {
     }, [socketManager, clearCanvas]);
 
     useEffect(() => {
-        socketManager.setDrawHandler((erase, startX, startY, endX, endY, penSize) => {
-            if (!isLeader) {
-                if (erase) {
-                    clearCanvas();
-                } else {
-                    drawCleanLine(startX, startY, endX, endY, penSize);
+        // Only set the handler when the context is valid
+        if (context) {
+            socketManager.setDrawHandler((erase, startX, startY, endX, endY, penSize) => {
+                if (!isLeader) {
+                    if (erase) {
+                        clearCanvas();
+                    } else {
+                        drawCleanLine(startX, startY, endX, endY, penSize);
+                    }
                 }
-            }
-        });
+            });
 
-        return () => {
-            socketManager.setDrawHandler(null);
+            return () => {
+                socketManager.setDrawHandler(null);
+            }
         }
-    }, [drawCleanLine, socketManager, isLeader, clearCanvas]);
+    }, [drawCleanLine, socketManager, isLeader, clearCanvas, context]);
 
     // Consider whether this is the correct control flow, feels a bit hacky
     useEffect(() => {

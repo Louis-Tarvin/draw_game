@@ -18,3 +18,7 @@ body {
 .invisible {
     visibility: hidden;
 }
+
+input {
+    outline: none;
+}

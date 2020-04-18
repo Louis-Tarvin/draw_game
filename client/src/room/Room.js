@@ -27,18 +27,20 @@ export default function Room({ socketManager }) {
         return (<></>);
     }
 
-    let mainCardBody = (<Canvas socketManager={socketManager} isLeader={roomState === 'leader'} />);
+    let showCanvas = true;
+    let showLobby = false;
 
     let title;
     switch (roomState) {
         case 'lobby':
             if (host.isCurrentUser) {
                 title = (<h2 className="title">Press start when everyone is ready</h2>);
-                mainCardBody = (<Lobby socketManager={socketManager} />);
+                showLobby = true;
             } else {
-                title = (<h2 className="title">Waiting for {host.username}</h2>);
-                mainCardBody = (<></>);
+                title = (<h2 className="title">Waiting for {host.username} to start the game</h2>);
             }
+
+            showCanvas = false;
             break;
         case 'leader':
             title = (<h2 className="title">Draw {word}</h2>);
@@ -70,7 +72,12 @@ export default function Room({ socketManager }) {
                         </form>
                     </div>
                     {title}
-                    {mainCardBody}
+                    <div hidden={!showCanvas}>
+                        <Canvas socketManager={socketManager} isLeader={roomState === 'leader'} />
+                    </div>
+                    <div hidden={!showLobby}>
+                        <Lobby socketManager={socketManager} />
+                    </div>
                 </div>
                 <div className="chat-card">
                     <Chat socketManager={socketManager} disabled={roomState === 'leader'} />

@@ -80,7 +80,7 @@ canvas {
     color: #9B59B6;
 
     max-width: 600px;
-    min-width: 200px;
+    min-width: 350px;
     flex: 1;
 
     display: inline-block;
@@ -114,7 +114,7 @@ canvas {
     font-style: italic;
 }
 
-input[type="text"] {
+.chat-form input[type="text"] {
     width: 100%;
     border: 0;
     border-bottom: 6px solid #9B59B6;
@@ -124,7 +124,18 @@ input[type="text"] {
     font-size: 20px;
     font-family: 'Inconsolata';
 
+    padding: 5px;
+
     margin: 20px 0;
+}
+
+.chat-form input[type="text"]::placeholder {
+    color: #9B59B6;
+    opacity: 0.5;
+}
+
+.chat-form input[disabled] {
+    background-color: #EEE;
 }
 
 .autoscroll-button {

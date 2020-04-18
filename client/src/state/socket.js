@@ -20,6 +20,7 @@ export default class SocketManager {
         this.connect();
         this.store = store;
         this.drawHandler = null;
+        this.drawBuffer = [];
         this.newRoundHandler = null;
         this.joinRoomErrorHandler = null;
     }
@@ -35,11 +36,16 @@ export default class SocketManager {
         let i;
         if (message[0] === 'd') {
             let p = message.slice(1).split(',').map(str => parseInt(str));
-            if (this.drawHandler)
+            if (this.drawHandler) {
                 this.drawHandler.apply(undefined, [false, ...p]);
+            } else {
+                this.drawBuffer.push([false, ...p]);
+            }
         } else if (message[0] === 'b') {
             if (this.drawHandler) {
                 this.drawHandler(true);
+            } else {
+                this.drawBuffer.push([true]);
             }
         } else if (message[0] === 'c') {
             let id = message.slice(1);
@@ -117,6 +123,12 @@ export default class SocketManager {
     }
 
     setDrawHandler(callback) {
+        if (callback) {
+            for (var i = 0; i < this.drawBuffer.length; i ++) {
+                callback.apply(undefined, this.drawBuffer[i]);
+            }
+            this.drawBuffer = [];
+        }
         this.drawHandler = callback;
     }
 
