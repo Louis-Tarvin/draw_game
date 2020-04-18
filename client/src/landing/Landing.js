@@ -1,16 +1,49 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import classNames from 'classnames';
 import useInput from 'common/useInput';
 
 import './Landing.css';
 
+function usePrevious(value) {
+    const ref = useRef();
+    useEffect(() => {
+        ref.current = value;
+    });
+    return ref.current;
+}
+
 function EnterRoom({ username, socketManager, enabled }) {
     const [roomCode, roomCodeField] = useInput({ placeholder: 'Room code', maxlength: 5 });
     const disabled = useSelector(state => state.socketState !== 'connected');
 
+    const prevCode = usePrevious(roomCode);
+
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        socketManager.setJoinRoomErrorHandler((invalidKey, invalidUsername) => {
+            if (invalidKey === roomCode) {
+                setError(<>The room <code>{roomCode}</code> doesn't exist.</>);
+            } else if (invalidUsername === username) {
+                setError(<>The username <code>{username}</code> is already in use in the room.</>);
+            } else {
+                setError(null);
+            }
+        });
+
+        return () => {
+            socketManager.setJoinRoomErrorHandler(null);
+        };
+    }, [socketManager, setError, roomCode, username]);
+
     const joinRoomSubmit = e => {
         e.preventDefault();
+
+        if (roomCode === '') {
+            setError('You must enter a room code to join a room.');
+            return;
+        }
 
         console.debug('Joining room', roomCode, 'with username', username);
         socketManager.joinRoom(roomCode, username);
@@ -21,6 +54,12 @@ function EnterRoom({ username, socketManager, enabled }) {
         console.debug('Creating room with username', username);
         socketManager.createRoom(username);
     };
+
+    useEffect(() => {
+        if (prevCode !== roomCode) {
+            setError(null);
+        }
+    }, [roomCode, prevCode, setError]);
 
     return (
         <div className={classNames('enter-room', { 'show': enabled })}>
@@ -33,6 +72,7 @@ function EnterRoom({ username, socketManager, enabled }) {
             <form className="create-room" onSubmit={createRoomSubmit}>
                 <input type="submit" value="Create Room" disabled={disabled} />
             </form>
+            <p className="error">{error}</p>
         </div>
     );
 }

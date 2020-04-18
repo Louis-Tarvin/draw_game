@@ -63,6 +63,10 @@ impl Handler<Event> for Session {
                 }
                 output
             }
+            // fk = failure key
+            Event::NonExistantRoom(key) => format!("fk{}", key),
+            // fu = failure username
+            Event::UsernameExists(username) => format!("fu{}", username),
             Event::LeaveRoom => {
                 self.room = None;
                 "q".to_string()
