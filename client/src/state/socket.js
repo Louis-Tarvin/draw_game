@@ -86,7 +86,7 @@ export default class SocketManager {
         } else if (message[0] === 'w') {
             if (message[1] === 'T') {
                 let data = message.slice(2).split(',');
-                this.store.dispatch(winner(data[0], data[1]));
+                this.store.dispatch(winner(data[0], data[1], data[2], data[3]));
             } else {
                 this.store.dispatch(timeout(message.slice(2)));
             }

@@ -44,7 +44,7 @@ export default function Lobby({ socketManager }) {
         <>
             <h2>Room Settings:</h2>
             <form className="start-form" onSubmit={onStart}>
-                <label className="checkbox-wrapper" htmlFor="round-timer-checkbox">Round time limit
+                <label className="checkbox-wrapper" htmlFor="round-timer-checkbox">Two minute round timer
                     <input type="checkbox" id="round-timer-checkbox" ref={roundTimerCheckboxRef} />
                     <span className="checkbox-span"></span>
                 </label>

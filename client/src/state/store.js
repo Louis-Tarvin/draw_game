@@ -49,7 +49,13 @@ function stateManager(state = {}, action) {
             newState.room = { ...newState.room };
             newState.room.state = 'winner';
             newState.room.winner = state.room.users[action.winnerID];
-            const winMessage = { type: 'winner', winner: state.room.users[action.winnerID], word: action.word };
+            const winMessage = {
+                type: 'winner',
+                winner: state.room.users[action.winnerID],
+                points: action.points,
+                word: action.word,
+                alternate: action.alternate
+            };
             newState.room.messages = pushItem(newState.room.messages, winMessage);
             return newState;
         case 'TIMEOUT':

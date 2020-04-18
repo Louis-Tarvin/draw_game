@@ -157,7 +157,7 @@ export default function Canvas({ socketManager, isLeader }) {
 
     return (
         <>
-            {canvasClearing && isLeader? <input type="submit" onClick={eraseCanvas} value="Clear"  />: null}
+            {canvasClearing && isLeader? <input className="clear-button" type="submit" onClick={eraseCanvas} value="Clear"  />: null}
             <canvas
                 ref={canvasRef}
                 onMouseDown={mouseDown}

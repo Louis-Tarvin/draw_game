@@ -67,10 +67,23 @@ impl WordPack {
     pub fn get_word(&self, index: usize) -> &String {
         &self.list[index].0
     }
+    pub fn get_alternate(&self, word: usize, alternate: usize) -> &String {
+        &self.list[word].1[alternate]
+    }
 
-    pub fn word_matches(&self, index: usize, guess: &str) -> bool {
+    pub fn word_matches(&self, index: usize, guess: &str) -> (bool, Option<usize>) {
         let (word, alternates) = &self.list[index];
-        word == guess || alternates.iter().any(|alternate| alternate == guess)
+        if word == guess {
+            (true, None)
+        } else if let Some((alternate, _)) = alternates
+            .iter()
+            .enumerate()
+            .find(|(_, alternate)| alternate == &guess)
+        {
+            (true, Some(alternate))
+        } else {
+            (false, None)
+        }
     }
 }
 

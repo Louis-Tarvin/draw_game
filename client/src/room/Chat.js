@@ -26,7 +26,8 @@ function Message({ message, users }) {
                 <div className="message winner">
                     <span className="username">{message.winner.username} </span>
                     correctly guessed the word
-                    <span className="word"> {message.word}</span>
+                    <span className="word"> {message.word}{message.alternate? ` (${message.alternate})`: ''}</span>
+                    , they now have {message.points} points
                 </div>
             );
         case 'user_join':
@@ -118,11 +119,8 @@ export default function Chat({ socketManager, disabled }) {
         case 'leader':
             chatPlaceholder = "Can't chat while drawing";
             break;
-        case 'guesser':
-            chatPlaceholder = "Make a guess";
-            break;
         default:
-
+            chatPlaceholder = "Make a guess";
     }
 
     return (

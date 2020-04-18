@@ -29,8 +29,8 @@ pub enum Event {
     NonExistantRoom(String),
     /// Leave a room
     LeaveRoom,
-    /// When a user has won. Contains the username and word guessed
-    Winner(Option<usize>, String),
+    /// When a user has won. Contains the username, points, word guessed, and alternate
+    Winner(Option<usize>, usize, String, Option<String>),
     /// When another user joins
     UserJoin(usize, String),
     /// When another user leaves

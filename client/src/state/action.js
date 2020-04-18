@@ -26,9 +26,13 @@ export function chatMessage(userID, content) {
     return { type: 'CHAT_MESSAGE', message: { userID, content } };
 }
 
-export function winner(winnerID, rawWord) {
+export function winner(winnerID, points, rawWord, rawAlternate) {
     const word = rawWord[0].toUpperCase() + rawWord.slice(1);
-    return { type: 'WINNER', winnerID, word };
+    let alternate;
+    if (rawAlternate) {
+        alternate = rawAlternate[0].toUpperCase() + rawAlternate.slice(1);
+    }
+    return { type: 'WINNER', winnerID, points, word, alternate };
 }
 
 export function timeout(rawWord) {
