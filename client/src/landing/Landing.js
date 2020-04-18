@@ -13,26 +13,11 @@ function usePrevious(value) {
     return ref.current;
 }
 
-// Returns null if the value is unchanged from previous and the value otherwise
-// function useChanged(value) {
-//     const prev = usePrevious(value);
-//     if (prev === value) {
-//         return null;
-//     } else {
-//         return value;
-//     }
-// }
-
 function EnterRoom({ username, socketManager, enabled }) {
     const [roomCode, roomCodeField] = useInput({ placeholder: 'Room code', maxlength: 5 });
     const disabled = useSelector(state => state.socketState !== 'connected');
 
     const prevCode = usePrevious(roomCode);
-
-    // We wan't use 'useChanged' here since we only care about this message if it is new,
-    // if it is old we shouldn't re-display an old error.
-    // const invalidRoomKey = useSelector(state => state.invalidRoomKey);
-    // const invalidUsername = useSelector(state => state.invalidUsername);
 
     const [error, setError] = useState(null);
 
