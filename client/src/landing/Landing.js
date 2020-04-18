@@ -41,6 +41,7 @@ function EnterRoom({ username, socketManager, enabled }) {
         e.preventDefault();
 
         if (roomCode === '') {
+            setError('You must enter a room code to join a room.');
             return;
         }
 
