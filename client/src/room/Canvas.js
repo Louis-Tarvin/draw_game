@@ -57,6 +57,12 @@ export default function Canvas({ socketManager, isLeader }) {
     // eslint-disable-next-line
     const [penSize, setPenSize] = useState(2);
 
+    useEffect(() => {
+        if (canvas) {
+            canvas.addEventListener('contextmenu', event => event.preventDefault());
+        }
+    }, [canvas]);
+
     const drawLine = useCallback((startX, startY, endX, endY, penSize) => {
         if (!context) {
             console.error('Context wasn\'t available during line drawing');
@@ -185,6 +191,15 @@ export default function Canvas({ socketManager, isLeader }) {
         }
     }, [isLeader, penDown, canvas, drawCleanLine, penSize, prevX, prevY]);
 
+    const download = useCallback(e => {
+        if (canvas) {
+            const a = document.createElement('a');
+            a.href = canvas.toDataURL();
+            a.download = 'drawing';
+            a.click();
+        }
+    }, [canvas]);
+
     return (
         <>
             <div className={isLeader? "draw-toolbar": "draw-toolbar hide"}>
@@ -204,7 +219,7 @@ export default function Canvas({ socketManager, isLeader }) {
                     height="500">
                 </canvas>
             </div>
-            <input className="download-button" type="submit" value="Download drawing" />
+            <input className="download-button" type="submit" value="Download drawing" onClick={download} />
         </>
     );
 }
