@@ -72,7 +72,7 @@ export default function Room({ socketManager }) {
                         </form>
                     </div>
                     {title}
-                    <div hidden={!showCanvas}>
+                    <div className="canvas-hider" hidden={!showCanvas}>
                         <Canvas socketManager={socketManager} isLeader={roomState === 'leader'} />
                     </div>
                     <div hidden={!showLobby}>

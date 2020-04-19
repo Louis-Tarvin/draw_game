@@ -445,9 +445,15 @@ impl Room {
                 .collect::<Result<Vec<_>, _>>()
             {
                 if let [x1, x2, y1, y2, pen_size] = *content {
-                    // TODO: check bounds of numbers
-                    self.broadcast_event(Event::Draw(x1, x2, y1, y2, pen_size));
-                    self.draw_history.push((x1, x2, y1, y2, pen_size));
+                    if x1 <= 500 && x2 <= 500 && y1 <= 500 && y2 <= 500 && pen_size <= 10 {
+                        self.broadcast_event(Event::Draw(x1, x2, y1, y2, pen_size));
+                        self.draw_history.push((x1, x2, y1, y2, pen_size));
+                    } else {
+                        warn!(
+                            "{} in room {} sent a draw command with parts out of range",
+                            session_id, self.key,
+                        )
+                    }
                 } else {
                     warn!(
                         "{} in room {} sent a draw command with not enough parts (expected 5 got {})",
