@@ -54,7 +54,6 @@ export default function Canvas({ socketManager, isLeader }) {
 
     const [prevX, setPrevX] = useState(0);
     const [prevY, setPrevY] = useState(0);
-    // eslint-disable-next-line
     const [penSize, setPenSize] = useState(2);
 
     useEffect(() => {
