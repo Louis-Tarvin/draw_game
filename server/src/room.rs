@@ -238,7 +238,9 @@ impl Room {
             RoomState::Lobby(LobbyState { host }) => {
                 self.direct_message(&recipient, Event::EnterLobby(host));
             }
-            RoomState::Round(RoundState { leader, timeout, .. }) => {
+            RoomState::Round(RoundState {
+                leader, timeout, ..
+            }) => {
                 self.direct_message(&recipient, Event::NewRound(leader, timeout));
                 self.send_draw_history(session_id, &recipient);
             }
@@ -482,7 +484,7 @@ impl Room {
                     session_id, self.key
                 )
             }
-        } else {
+        } else if !matches!(self.state, RoomState::Winner(_)) {
             warn!(
                 "draw command sent by {} in invalid state in room {}",
                 session_id, self.key

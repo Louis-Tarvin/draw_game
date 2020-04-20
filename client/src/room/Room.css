@@ -154,6 +154,7 @@ input[type=range] {
     overflow-y: scroll;
     scroll-behavior: smooth;
     flex: 1;
+    max-height: 650px;
 }
 
 .username {
