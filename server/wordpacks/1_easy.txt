@@ -33,3 +33,26 @@ tent
 apple
 book
 cactus
+car
+road
+castle
+wheel
+sun
+cloud
+star
+glasses
+clock
+feather
+lightbulb, bulb
+hair
+hand
+foot
+mouth
+eye, eyeball
+shark
+fish
+key
+table
+burger, hamburger, cheeseburger
+tap
+kettle

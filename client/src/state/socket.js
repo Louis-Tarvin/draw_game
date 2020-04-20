@@ -55,13 +55,13 @@ export default class SocketManager {
             this.store.dispatch(chatMessage(message[0], message[1]));
         } else if (message[0] === 'l') {
             let canvasClearing = message[1] === 'T';
-            let word = message.slice(2);
-            this.store.dispatch(becomeLeader(canvasClearing, word));
+            let parts = message.slice(2).split(',');
+            this.store.dispatch(becomeLeader(canvasClearing, parts[0], parts[1]));
             if(this.newRoundHandler)
                 this.newRoundHandler();
         } else if (message[0] === 'r') {
-            let leaderID = message.slice(1);
-            this.store.dispatch(becomeGuesser(leaderID));
+            let parts = message.slice(1).split(',');
+            this.store.dispatch(becomeGuesser(parts[0], parts[1]));
             if(this.newRoundHandler)
                 this.newRoundHandler();
         } else if (message[0] === 'e') {

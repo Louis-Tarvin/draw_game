@@ -38,7 +38,7 @@ honey
 smoke
 swordfish
 party
-donut
+donut, doughnut
 gun
 deer
 stop sign
@@ -116,3 +116,4 @@ email
 Advert, Ad, Advertisement
 radar
 surf
+war

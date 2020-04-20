@@ -93,18 +93,19 @@ pub fn load_word_packs<P: std::fmt::Debug + AsRef<std::path::Path>>(
     use std::fs;
     trace!("loading wordpacks in directory `{:?}`", word_pack_path);
     let mut word_packs = Vec::new();
-    for entry in fs::read_dir(word_pack_path)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_file() {
-            let word_pack = WordPack::new(&path)?;
-            trace!(
-                "loaded word pack {} with {} words",
-                word_pack.get_name(),
-                word_pack.list_len()
-            );
-            word_packs.push(word_pack);
-        }
+    let mut paths: Vec<_> = fs::read_dir(word_pack_path)?
+        .filter_map(|r| r.ok())
+        .filter(|p| p.path().is_file())
+        .collect();
+    paths.sort_by_key(|entry| entry.path());
+    for entry in paths {
+        let word_pack = WordPack::new(&entry.path())?;
+        trace!(
+            "loaded word pack {} with {} words",
+            word_pack.get_name(),
+            word_pack.list_len()
+        );
+        word_packs.push(word_pack);
     }
     Ok(word_packs)
 }

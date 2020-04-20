@@ -83,6 +83,10 @@ canvas {
     overflow: hidden;
 }
 
+.countdown {
+    text-align: center;
+}
+
 .draw-toolbar {
     vertical-align: middle;
     margin-bottom: 5px;
