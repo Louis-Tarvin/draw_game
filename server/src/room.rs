@@ -262,7 +262,12 @@ impl Room {
                 self.send_draw_history(session_id, &recipient);
             }
         }
-        self.queue.push_back(session_id);
+
+        // Since it's possible for a user to leave and then rejoin during which time they will remain
+        // in the queue we should check before adding them back
+        if !self.queue.contains(&session_id) {
+            self.queue.push_back(session_id);
+        }
     }
 
     fn send_draw_history(&self, session_id: usize, recipient: &Recipient<Event>) {
