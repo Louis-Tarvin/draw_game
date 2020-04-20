@@ -27,7 +27,7 @@ function Message({ message, users }) {
                     <span className="username">{message.winner.username} </span>
                     correctly guessed the word
                     <span className="word"> {message.word}{message.alternate? ` (${message.alternate})`: ''}</span>
-                    , they now have {message.points} points
+                    , they now have {message.points} point{message.points>1? 's': ''}
                 </div>
             );
         case 'user_join':

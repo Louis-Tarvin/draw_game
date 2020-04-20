@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './Room.css';
 
 import Chat from './Chat';
@@ -7,6 +7,31 @@ import Lobby from './Lobby';
 
 import { useSelector } from 'react-redux';
 
+function Countdown({ timestamp }) {
+    const [seconds, setSeconds] = useState(null);
+
+    useEffect(() => {
+        if (timestamp) {
+            const interval = setInterval(() => {
+                setSeconds(Math.ceil((timestamp - new Date()) / 1000));
+            }, 100);
+            return () => {
+                clearInterval(interval);
+            }
+        }
+    }, [timestamp, setSeconds]);
+
+    if (seconds === null || !timestamp) {
+        return null;
+    }
+
+    return (
+        <div className="countdown">
+            Seconds remaining: {seconds}
+        </div>
+    );
+}
+
 export default function Room({ socketManager }) {
     const word = useSelector(state => state.room.word);
     const roomCode = useSelector(state => state.room.code);
@@ -14,6 +39,7 @@ export default function Room({ socketManager }) {
     const roomState = useSelector(state => state.room.state);
     const host = useSelector(state => state.room.host);
     const winner = useSelector(state => state.room.winner);
+    const timestamp = useSelector(state => state.room.timestamp);
 
     const leaveRoomSubmit = e => {
         e.preventDefault();
@@ -29,6 +55,7 @@ export default function Room({ socketManager }) {
 
     let showCanvas = true;
     let showLobby = false;
+    let showCountdown = false;
 
     let title;
     switch (roomState) {
@@ -44,9 +71,11 @@ export default function Room({ socketManager }) {
             break;
         case 'leader':
             title = (<h2 className="title">Draw {word}</h2>);
+            showCountdown = true;
             break;
         case 'guesser':
             title = (<h2 className="title">Guess what {leader.username} is drawing</h2>);
+            showCountdown = true;
             break;
         case 'winner':
             if (winner.isCurrentUser) {
@@ -71,6 +100,7 @@ export default function Room({ socketManager }) {
                             <input type="submit" value="Leave Room" />
                         </form>
                     </div>
+                    {showCountdown? <Countdown timestamp={timestamp}/>: null}
                     {title}
                     <div className="canvas-hider" hidden={!showCanvas}>
                         <Canvas socketManager={socketManager} isLeader={roomState === 'leader'} />

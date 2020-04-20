@@ -73,6 +73,7 @@ function stateManager(state = {}, action) {
             newState.room.word = action.word;
             newState.room.canvasClearing = action.canvasClearing;
             newState.room.leader = state.room.users[state.socketID];
+            newState.room.timestamp = action.timeout;
             return newState;
         case 'BECOME_GUESSER':
             console.debug('Became guesser leaderid =', action.leaderID);
@@ -80,6 +81,7 @@ function stateManager(state = {}, action) {
             newState.room = { ...newState.room };
             newState.room.state = 'guesser';
             newState.room.leader = state.room.users[action.leaderID];
+            newState.room.timestamp = action.timeout;
             return newState;
         case 'USER_JOINED':
             newState = { ...state };

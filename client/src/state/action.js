@@ -40,13 +40,25 @@ export function timeout(rawWord) {
     return { type: 'TIMEOUT', word };
 }
 
-export function becomeLeader(canvasClearing, rawWord) {
+export function becomeLeader(canvasClearing, rawWord, rawTimeout) {
+    let timeout;
+    if (rawTimeout === '0') {
+        timeout = null;
+    } else {
+        timeout = new Date(Number(rawTimeout));
+    }
     const word = rawWord[0].toUpperCase() + rawWord.slice(1);
-    return { type: 'BECOME_LEADER', canvasClearing, word };
+    return { type: 'BECOME_LEADER', canvasClearing, word, timeout };
 }
 
-export function becomeGuesser(leaderID) {
-    return { type: 'BECOME_GUESSER', leaderID };
+export function becomeGuesser(leaderID, rawTimeout) {
+    let timeout;
+    if (rawTimeout === '0') {
+        timeout = null;
+    } else {
+        timeout = new Date(Number(rawTimeout));
+    }
+    return { type: 'BECOME_GUESSER', leaderID, timeout };
 }
 
 export function userJoinedRoom(userID, username) {

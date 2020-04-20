@@ -75,12 +75,21 @@ impl Handler<Event> for Session {
                 format!("d{},{},{},{},{}", x1, y1, x2, y2, pen_size)
             }
             Event::ClearCanvas => "b".to_string(),
-            Event::NewRound(username) => format!("r{}", username),
-            Event::NewLeader(canvas_clearing, word) => {
-                format!("l{}{}", if canvas_clearing { 'T' } else { 'F' }, word)
-            }
+            Event::NewRound(username, timeout) => format!("r{},{}", username, timeout.unwrap_or(0)),
+            Event::NewLeader(canvas_clearing, word, timeout) => format!(
+                "l{}{},{}",
+                if canvas_clearing { 'T' } else { 'F' },
+                word,
+                timeout.unwrap_or(0)
+            ),
             Event::Winner(winner, points, word, alternate) => match winner {
-                Some(id) => format!("wT{},{},{},{}", id, points, word, alternate.unwrap_or_default()),
+                Some(id) => format!(
+                    "wT{},{},{},{}",
+                    id,
+                    points,
+                    word,
+                    alternate.unwrap_or_default()
+                ),
                 None => format!("wF{}", word),
             },
             Event::UserJoin(session_id, username) => format!("j{},{}", session_id, username),

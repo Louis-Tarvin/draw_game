@@ -8,6 +8,8 @@ use rand::prelude::*;
 
 use crate::{server::GameServer, word_pack::WordPack, Event};
 
+const ROUND_LIMIT: Duration = Duration::from_secs(120);
+
 struct LobbyState {
     pub host: usize,
 }
@@ -15,6 +17,7 @@ struct LobbyState {
 struct RoundState {
     pub word: (usize, usize),
     pub leader: usize,
+    pub timeout: Option<u128>,
 }
 
 struct WinnerState {
@@ -235,8 +238,8 @@ impl Room {
             RoomState::Lobby(LobbyState { host }) => {
                 self.direct_message(&recipient, Event::EnterLobby(host));
             }
-            RoomState::Round(RoundState { leader, .. }) => {
-                self.direct_message(&recipient, Event::NewRound(leader));
+            RoomState::Round(RoundState { leader, timeout, .. }) => {
+                self.direct_message(&recipient, Event::NewRound(leader, timeout));
                 self.send_draw_history(session_id, &recipient);
             }
             RoomState::Winner(WinnerState {
@@ -320,7 +323,7 @@ impl Room {
         alternate: Option<usize>,
         ctx: &mut Context<GameServer>,
     ) {
-        if let RoomState::Round(RoundState { word, leader }) = self.state {
+        if let RoomState::Round(RoundState { word, leader, .. }) = self.state {
             self.state = RoomState::Winner(WinnerState {
                 winner,
                 points,
@@ -350,20 +353,31 @@ impl Room {
         self.draw_history.clear();
         while let Some(new_leader) = self.queue.pop_front() {
             if self.occupants.get(&new_leader).is_some() {
+                use std::time::SystemTime;
+
+                let timestamp = if self.settings.round_timer {
+                    let now = SystemTime::now()
+                        .duration_since(SystemTime::UNIX_EPOCH)
+                        .expect("went backwards in time");
+                    Some((now + ROUND_LIMIT).as_millis())
+                } else {
+                    None
+                };
                 self.state = RoomState::Round(RoundState {
                     word,
                     leader: new_leader,
+                    timeout: timestamp,
                 });
-
                 for (session_id, (recipient, _, _)) in self.occupants.iter() {
                     if *session_id != new_leader {
-                        self.direct_message(recipient, Event::NewRound(new_leader));
+                        self.direct_message(recipient, Event::NewRound(new_leader, timestamp));
                     } else {
                         self.direct_message(
                             recipient,
                             Event::NewLeader(
                                 self.settings.allow_clear,
                                 self.get_word(word).clone(),
+                                timestamp,
                             ),
                         );
                     }
@@ -372,7 +386,7 @@ impl Room {
                 if self.settings.round_timer {
                     let round_id = self.round_id;
                     let key = self.key.clone();
-                    ctx.run_later(Duration::from_secs(120), move |server, ctx| {
+                    ctx.run_later(ROUND_LIMIT, move |server, ctx| {
                         server.round_timeout(&key, round_id, ctx);
                     });
                 }
@@ -404,7 +418,7 @@ impl Room {
         message: String,
         ctx: &mut Context<GameServer>,
     ) {
-        if let RoomState::Round(RoundState { word, leader }) = self.state {
+        if let RoomState::Round(RoundState { word, leader, .. }) = self.state {
             if session_id != leader {
                 self.broadcast_event(Event::Message(session_id, message.clone()));
                 let (matches, alternate) =

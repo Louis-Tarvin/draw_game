@@ -18,9 +18,9 @@ pub enum Event {
     /// Clears the canvas
     ClearCanvas,
     /// Start of a new round
-    NewRound(usize),
+    NewRound(usize, Option<u128>),
     /// Assign the session a word to draw
-    NewLeader(bool, String),
+    NewLeader(bool, String, Option<u128>),
     /// Join a room. Contains the room code and user list
     EnterRoom(String, Vec<(usize, String)>),
     /// Error that indicates that a username already exists within a room
