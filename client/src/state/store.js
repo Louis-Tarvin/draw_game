@@ -62,6 +62,7 @@ function stateManager(state = {}, action) {
             newState = { ...state };
             newState.room = { ...newState.room };
             newState.room.state = 'timeout';
+            newState.room.word = action.word;
             const timeoutMessage = { type: 'timeout', word: action.word };
             newState.room.messages = pushItem(newState.room.messages, timeoutMessage);
             return newState;
