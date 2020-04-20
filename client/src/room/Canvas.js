@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 
 function useCanvasContext() {
     const [context, setContext] = useState(null);
@@ -15,15 +16,51 @@ function useCanvasContext() {
     return [context, canvas, canvasRef];
 }
 
+function Pen({ penSize, x, y }) {
+
+    const style = {
+        width: penSize * 2,
+        height: penSize * 2,
+        top: y - penSize,
+        left: x - penSize
+    };
+
+    return (
+        <div className="pen" style={style}></div>
+    );
+}
+
+function PenChanger({ penSize, setPenSize }) {
+
+    return (
+        <div className="pen-changer">
+            <input
+                type="range"
+                min="1"
+                max="10"
+                value={penSize}
+                onChange={e => setPenSize(e.target.value)}
+            />
+        </div>
+    );
+}
+
 export default function Canvas({ socketManager, isLeader }) {
     const [context, canvas, canvasRef] = useCanvasContext();
     const [penDown, setPenDown] = useState(false);
     const [penLeft, setPenLeft] = useState(false);
 
+    const canvasClearing = useSelector(state => state.room.canvasClearing);
+
     const [prevX, setPrevX] = useState(0);
     const [prevY, setPrevY] = useState(0);
-    // eslint-disable-next-line
     const [penSize, setPenSize] = useState(2);
+
+    useEffect(() => {
+        if (canvas) {
+            canvas.addEventListener('contextmenu', event => event.preventDefault());
+        }
+    }, [canvas]);
 
     const drawLine = useCallback((startX, startY, endX, endY, penSize) => {
         if (!context) {
@@ -51,25 +88,38 @@ export default function Canvas({ socketManager, isLeader }) {
         drawLine.apply(null, [startX, startY, endX, endY, penSize]
             .map(x => Math.round(x))
             .map(x => x < 0? 0: x)
+            .map(x => x > 500? 500: x)
         );
-    }, [drawLine])
+    }, [drawLine]);
 
     const clearCanvas = useCallback(() => {
         if (context)
             context.clearRect(0, 0, canvas.width, canvas.height);
     }, [context, canvas]);
 
-    useEffect(() => {
-        socketManager.setDrawHandler((startX, startY, endX, endY, penSize) => {
-            if (!isLeader) {
-                drawCleanLine(startX, startY, endX, endY, penSize);
-            }
-        });
+    const eraseCanvas = useCallback(() => {
+        socketManager.clear();
+        clearCanvas();
+    }, [socketManager, clearCanvas]);
 
-        return () => {
-            socketManager.setDrawHandler(null);
+    useEffect(() => {
+        // Only set the handler when the context is valid
+        if (context) {
+            socketManager.setDrawHandler((erase, startX, startY, endX, endY, penSize) => {
+                if (!isLeader) {
+                    if (erase) {
+                        clearCanvas();
+                    } else {
+                        drawCleanLine(startX, startY, endX, endY, penSize);
+                    }
+                }
+            });
+
+            return () => {
+                socketManager.setDrawHandler(null);
+            }
         }
-    }, [drawCleanLine, socketManager, isLeader]);
+    }, [drawCleanLine, socketManager, isLeader, clearCanvas, context]);
 
     // Consider whether this is the correct control flow, feels a bit hacky
     useEffect(() => {
@@ -87,13 +137,13 @@ export default function Canvas({ socketManager, isLeader }) {
     }, [setPenDown]);
 
     const mouseMove = useCallback(e => {
-        if (isLeader && penDown && !penLeft && canvas) {
+        if (canvas) {
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-
-            drawCleanLine(x, y, prevX, prevY, penSize);
-
+            if (isLeader && penDown && !penLeft) {
+                drawCleanLine(x, y, prevX, prevY, penSize);
+            }
             setPrevX(x);
             setPrevY(y);
         }
@@ -140,15 +190,35 @@ export default function Canvas({ socketManager, isLeader }) {
         }
     }, [isLeader, penDown, canvas, drawCleanLine, penSize, prevX, prevY]);
 
+    const download = useCallback(e => {
+        if (canvas) {
+            const a = document.createElement('a');
+            a.href = canvas.toDataURL();
+            a.download = 'drawing';
+            a.click();
+        }
+    }, [canvas]);
+
     return (
-        <canvas
-            ref={canvasRef}
-            onMouseDown={mouseDown}
-            onMouseMove={mouseMove}
-            onMouseEnter={mouseEnter}
-            onMouseLeave={mouseLeft}
-            width="500"
-            height="500">
-        </canvas>
+        <>
+            <div className={isLeader? "draw-toolbar": "draw-toolbar hide"}>
+                {canvasClearing? <input className="clear-button" type="submit" onClick={eraseCanvas} value="Clear canvas"  />: null}
+                <p className="pen-changer-label" >pen size: </p>
+                <PenChanger penSize={penSize} setPenSize={setPenSize} />
+            </div>
+            <div className={isLeader? "canvas-wrapper hide-cursor": "canvas-wrapper"}>
+                {isLeader? <Pen {...{ penSize, x: prevX, y: prevY }} />: null}
+                <canvas
+                    ref={canvasRef}
+                    onMouseDown={mouseDown}
+                    onMouseMove={mouseMove}
+                    onMouseEnter={mouseEnter}
+                    onMouseLeave={mouseLeft}
+                    width="500"
+                    height="500">
+                </canvas>
+            </div>
+            <input className="download-button" type="submit" value="Download drawing" onClick={download} />
+        </>
     );
 }

@@ -12,7 +12,6 @@ pub mod word_pack;
 
 pub use room::Room;
 pub use server::{ClientMessage, Event, GameServer};
-pub use word_pack::WordPack;
 
 use clap::{crate_authors, crate_version, load_yaml};
 
@@ -48,7 +47,7 @@ async fn main() -> std::io::Result<()> {
 
     let serve_dir = matches.value_of("serve_dir").map(|x| x.to_string());
 
-    let word_pack = matches.value_of("word_pack").unwrap_or("words.txt");
+    let word_pack = matches.value_of("word_pack").unwrap_or("wordpacks");
 
     let game_server = server::GameServer::new(word_pack).start();
 

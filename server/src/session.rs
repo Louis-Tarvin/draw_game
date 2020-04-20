@@ -63,6 +63,10 @@ impl Handler<Event> for Session {
                 }
                 output
             }
+            // fk = failure key
+            Event::NonExistantRoom(key) => format!("fk{}", key),
+            // fu = failure username
+            Event::UsernameExists(username) => format!("fu{}", username),
             Event::LeaveRoom => {
                 self.room = None;
                 "q".to_string()
@@ -70,11 +74,34 @@ impl Handler<Event> for Session {
             Event::Draw(x1, y1, x2, y2, pen_size) => {
                 format!("d{},{},{},{},{}", x1, y1, x2, y2, pen_size)
             }
-            Event::NewRound(username) => format!("r{}", username),
-            Event::NewLeader(word) => format!("l{}", word),
-            Event::Winner(session_id, word) => format!("w{},{}", session_id, word),
+            Event::ClearCanvas => "b".to_string(),
+            Event::NewRound(username, timeout) => format!("r{},{}", username, timeout.unwrap_or(0)),
+            Event::NewLeader(canvas_clearing, word, timeout) => format!(
+                "l{}{},{}",
+                if canvas_clearing { 'T' } else { 'F' },
+                word,
+                timeout.unwrap_or(0)
+            ),
+            Event::Winner(winner, points, word, alternate) => match winner {
+                Some(id) => format!(
+                    "wT{},{},{},{}",
+                    id,
+                    points,
+                    word,
+                    alternate.unwrap_or_default()
+                ),
+                None => format!("wF{}", word),
+            },
             Event::UserJoin(session_id, username) => format!("j{},{}", session_id, username),
             Event::UserGone(session_id) => format!("g{}", session_id),
+            Event::EnterLobby(host_id) => format!("o{}", host_id),
+            Event::SettingsData(wordpacks) => {
+                let mut string = "s".to_string();
+                for (id, name, description) in wordpacks {
+                    string.push_str(&format!("\n{},{},{}", id, name, description));
+                }
+                string
+            }
         };
         ctx.text(message);
     }

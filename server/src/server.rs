@@ -3,9 +3,10 @@ use rand::{distributions::Alphanumeric, prelude::*, rngs::ThreadRng};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::{Room, WordPack};
+use crate::word_pack::{load_word_packs, WordPack};
+use crate::Room;
 
-use log::{debug, info, trace, warn};
+use log::{info, trace, warn};
 
 #[derive(Message, Clone)]
 #[rtype(result = "()")]
@@ -14,43 +15,53 @@ pub enum Event {
     Message(usize, String),
     /// Draw event containing: (x1, y1, x2, y2, penSize)
     Draw(u32, u32, u32, u32, u32),
+    /// Clears the canvas
+    ClearCanvas,
     /// Start of a new round
-    NewRound(usize),
+    NewRound(usize, Option<u128>),
     /// Assign the session a word to draw
-    NewLeader(String),
+    NewLeader(bool, String, Option<u128>),
     /// Join a room. Contains the room code and user list
     EnterRoom(String, Vec<(usize, String)>),
+    /// Error that indicates that a username already exists within a room
+    UsernameExists(String),
+    /// Error that indicates that a room key doesn't exist
+    NonExistantRoom(String),
     /// Leave a room
     LeaveRoom,
-    /// When a user has won. Contains the username and word guessed
-    Winner(usize, String),
+    /// When a user has won. Contains the username, points, word guessed, and alternate
+    Winner(Option<usize>, usize, String, Option<String>),
     /// When another user joins
     UserJoin(usize, String),
     /// When another user leaves
     UserGone(usize),
+    /// Join a lobby. Contains the id of the host
+    EnterLobby(usize),
+    // Settings suplementary data for client. Wordpack id followed by name and description
+    SettingsData(Vec<(usize, String, String)>),
 }
 
 pub struct GameServer {
     rooms: HashMap<String, Room>,
     recipients: HashMap<usize, Recipient<Event>>,
     rng: ThreadRng,
-    word_pack: Arc<WordPack>,
+    word_packs: Arc<Vec<WordPack>>,
 }
 
 impl GameServer {
-    pub fn new<P: std::fmt::Debug + AsRef<std::path::Path>>(word_pack_path: P) -> Self {
-        let word_pack = WordPack::new(&word_pack_path).expect("Error loading the word pack");
+    pub fn new<P: std::fmt::Debug + AsRef<std::path::Path>>(word_pack_dir: P) -> Self {
+        let word_packs = load_word_packs(word_pack_dir).expect("Error loading the word packs");
 
         info!(
-            "Game server instance created with {} words",
-            word_pack.list_len()
+            "Game server instance created with {} word packs",
+            word_packs.len()
         );
 
         GameServer {
             rooms: HashMap::new(),
             recipients: HashMap::new(),
             rng: ThreadRng::default(),
-            word_pack: Arc::new(word_pack),
+            word_packs: Arc::new(word_packs),
         }
     }
 
@@ -64,7 +75,7 @@ impl GameServer {
                 if let Some(recipient) = self.recipients.get(&session_id) {
                     let room = Room::new(
                         key.clone(),
-                        Arc::clone(&self.word_pack),
+                        Arc::clone(&self.word_packs),
                         session_id,
                         recipient.clone(),
                         username.clone(),
@@ -88,25 +99,28 @@ impl GameServer {
             }
         }
     }
+
     fn join_room(&mut self, key: &str, username: String, session_id: usize) {
+        let recipient = self
+            .recipients
+            .get(&session_id)
+            .expect("session_id did not exist");
         if let Some(room) = self.rooms.get_mut(key) {
-            let recipient = self
-                .recipients
-                .get(&session_id)
-                .expect("session_id did not exist");
             room.join(session_id, recipient.clone(), username);
         } else {
             // Perfectly normal user behaviour (e.g. enter wrong key by accident)
-            debug!(
+            let _ = recipient.do_send(Event::NonExistantRoom(key.to_string()));
+            trace!(
                 "User {} ({}) tried to join non-existant room {}",
                 username, session_id, key
             );
         }
     }
-    fn leave_room(&mut self, key: &str, session_id: usize) {
+
+    fn leave_room(&mut self, key: &str, session_id: usize, ctx: &mut Context<GameServer>) {
         if let Some(room) = self.rooms.get_mut(key) {
             // If room after the session leaving is now empty, delete it
-            if room.leave(session_id) {
+            if room.leave(session_id, ctx) {
                 self.rooms.remove(key);
                 trace!(
                     "Room {} is empty so removing it, {} room(s) left",
@@ -121,6 +135,37 @@ impl GameServer {
             );
         }
     }
+
+    fn start_room(&mut self, key: &str, session_id: usize, lines: Vec<String>, ctx: &mut Context<GameServer>) {
+        if let Some(room) = self.rooms.get_mut(key) {
+            room.start(session_id, lines, ctx);
+        } else {
+            warn!(
+                "User {} tried to start non-existant room {}",
+                session_id, key
+            );
+        }
+    }
+
+    fn handle_clear(&mut self, key: &str, session_id: usize) {
+        if let Some(room) = self.rooms.get_mut(key) {
+            room.clear(session_id);
+        } else {
+            warn!(
+                "User {} tried to clear non-existant room {}",
+                session_id, key
+            );
+        }
+    }
+
+    pub fn round_timeout(&mut self, key: &str, round_id: usize, ctx: &mut Context<GameServer>) {
+        if let Some(room) = self.rooms.get_mut(key) {
+            room.round_timeout(round_id, ctx);
+        } else {
+            trace!("Round timeout on non-existant room {}", key);
+        }
+    }
+
     #[allow(clippy::map_entry)]
     fn connect(&mut self, recipient: Recipient<Event>) -> usize {
         loop {
@@ -136,6 +181,7 @@ impl GameServer {
             }
         }
     }
+
     fn disconnect(&mut self, id: usize) {
         self.recipients.remove(&id);
         trace!(
@@ -143,6 +189,12 @@ impl GameServer {
             id,
             self.recipients.len()
         );
+    }
+
+    pub fn new_round(&mut self, room_key: String, ctx: &mut Context<GameServer>) {
+        if let Some(room) = self.rooms.get_mut(&room_key) {
+            room.new_round(ctx);
+        }
     }
 }
 
@@ -174,7 +226,7 @@ pub struct DisconnectMessage {
 impl Handler<ClientMessage> for GameServer {
     type Result = ();
 
-    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: ClientMessage, ctx: &mut Context<Self>) {
         let type_char = if let Some(char) = msg.content.chars().next() {
             char
         } else {
@@ -194,7 +246,7 @@ impl Handler<ClientMessage> for GameServer {
                 }
 
                 if let Some(room) = self.rooms.get_mut(&room_key) {
-                    room.handle_guess(msg.session_id, chat);
+                    room.handle_guess(msg.session_id, chat, ctx);
                 } else {
                     warn!(
                         "User {} was marked as being in non-existant room {} when sending message",
@@ -215,7 +267,14 @@ impl Handler<ClientMessage> for GameServer {
                 }
             }
             (Some(room_key), 'q') => {
-                self.leave_room(&room_key, msg.session_id);
+                self.leave_room(&room_key, msg.session_id, ctx);
+            }
+            (Some(room_key), 's') => {
+                let lines: Vec<String> = msg.content.lines().skip(1).map(|x| x.to_string()).collect();
+                self.start_room(&room_key, msg.session_id, lines, ctx);
+            }
+            (Some(room_key), 'c') => {
+                self.handle_clear(&room_key, msg.session_id);
             }
             (None, 'j') => {
                 let data = msg.content.chars().skip(1).collect::<String>();
@@ -268,10 +327,10 @@ impl Handler<ConnectMessage> for GameServer {
 impl Handler<DisconnectMessage> for GameServer {
     type Result = ();
 
-    fn handle(&mut self, msg: DisconnectMessage, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: DisconnectMessage, ctx: &mut Context<Self>) {
         self.disconnect(msg.session_id);
         if let Some(room) = msg.room {
-            self.leave_room(&room, msg.session_id);
+            self.leave_room(&room, msg.session_id, ctx);
         }
     }
 }

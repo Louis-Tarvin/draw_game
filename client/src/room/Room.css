@@ -1,7 +1,4 @@
-canvas {
-    border: 1px solid black;
-    background-color: white;
-}
+/* GENERAL: */
 
 .room {
     display: flex;
@@ -22,39 +19,6 @@ canvas {
     justify-content: center;
 }
 
-.canvas-card {
-    padding: 30px;
-    border-radius: 10px;
-    margin: 0px 50px 50px 0px;
-
-    background-color: white;
-    color: #9B59B6;
-
-    max-width: 600px;
-    flex: 2;
-
-    display: inline-block;
-}
-
-.chat-card {
-    padding: 30px;
-    border-radius: 10px;
-    margin: 0px 50px 50px 0px;
-
-    background-color: white;
-    color: #9B59B6;
-
-    max-width: 600px;
-    min-width: 200px;
-    flex: 1;
-
-    display: inline-block;
-}
-
-.chat-area {
-    position: relative;
-}
-
 .room-status-bar {
     display: flex;
     flex-direction: row;
@@ -63,62 +27,6 @@ canvas {
 .title {
     text-align: center;
     margin-bottom: 10px;
-}
-
-.leave-form {
-    margin-left: auto;
-    margin-right: 0;
-}
-
-canvas {
-    display: block;
-    margin: auto;
-}
-
-.messages {
-    height: 500px;
-    overflow-y: scroll;
-    scroll-behavior: smooth;
-}
-
-.username {
-    font-weight: bolder;
-}
-
-.room-code {
-    font-weight: bold;
-}
-
-.initial {
-    color: grey;
-}
-
-.winner {
-    color: grey;
-    font-style: italic;
-}
-
-.user-joined {
-    color: grey;
-    font-style: italic;
-}
-
-.user-left {
-    color: grey;
-    font-style: italic;
-}
-
-input[type="text"] {
-    width: 100%;
-    border: 0;
-    border-bottom: 6px solid #9B59B6;
-
-    color: #9B59B6;
-
-    font-size: 20px;
-    font-family: 'Inconsolata';
-
-    margin: 20px 0;
 }
 
 input[type="submit"] {
@@ -138,6 +46,155 @@ input[type="submit"] {
     padding: 5px;
 }
 
+/* CANVAS: */
+
+canvas {
+    border: 1px solid black;
+    background-color: white;
+    display: block;
+    margin: auto;
+}
+
+.hide-cursor {
+    cursor: none;
+}
+
+.canvas-card {
+    padding: 30px;
+    border-radius: 10px;
+    margin: 0px 50px 50px 0px;
+
+    background-color: white;
+    color: #9B59B6;
+
+    max-width: 600px;
+    flex: 2;
+
+    display: inline-block;
+}
+
+.canvas-hider {
+    text-align: center;
+}
+
+.canvas-wrapper {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+}
+
+.countdown {
+    text-align: center;
+}
+
+.draw-toolbar {
+    vertical-align: middle;
+    margin-bottom: 5px;
+}
+
+.clear-button {
+    display: inline-block;
+    margin-right: 20px;
+}
+
+.pen-changer-label {
+    display: inline-block;
+}
+
+.pen {
+    position: absolute;
+    background-color: black;
+    border-radius: 50px;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.pen-changer {
+    width: 100px;
+    display: inline-block;
+    margin: auto 10px;
+}
+
+input[type=range] {
+    width: 100%;
+    vertical-align: middle;
+}
+
+.download-button {
+    margin-top: 5px;
+}
+
+/* CHAT: */
+
+.chat-card {
+    padding: 30px;
+    border-radius: 10px;
+    margin: 0px 50px 50px 0px;
+
+    background-color: white;
+    color: #9B59B6;
+
+    max-width: 600px;
+    min-width: 350px;
+    flex: 1;
+
+    display: inline-block;
+}
+
+.chat-area {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+
+.messages {
+    min-height: 400px;
+    overflow-y: scroll;
+    scroll-behavior: smooth;
+    flex: 1;
+}
+
+.username {
+    font-weight: bolder;
+}
+
+.room-code {
+    font-weight: bold;
+}
+
+.initial {
+    color: grey;
+}
+
+.winner, .user-joined, .user-left, .timeout {
+    color: grey;
+    font-style: italic;
+}
+
+.chat-form input[type="text"] {
+    width: 100%;
+    border: 0;
+    border-bottom: 6px solid #9B59B6;
+
+    color: #9B59B6;
+
+    font-size: 20px;
+    font-family: 'Inconsolata';
+
+    margin-top: 20px;
+}
+
+.chat-form input[type="text"]::placeholder {
+    color: #9B59B6;
+    opacity: 0.5;
+}
+
+.chat-form input[disabled] {
+    background-color: #EEE;
+}
+
 .autoscroll-button {
     border: 0;
     border-radius: 5px;
@@ -154,4 +211,104 @@ input[type="submit"] {
 
     padding: 5px;
     width: 100%;
+}
+
+/* LOBBY: */
+
+.leave-form {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.start-form {
+    width: 100%;
+}
+
+.wordpacks-wrapper {
+    height: 350px;
+    min-width: 500px;
+    margin: 10px 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow-y: scroll;
+}
+
+.wordpack {
+    border: 1px solid #9B59B6;
+    border-radius: 5px;
+    width: 200px;
+    height: 150px;
+    margin: 10px;
+    user-select: none;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.wordpack.selected {
+    background-color: #9B59B6;
+    color: white;
+}
+
+.wordpack-name {
+    font-size: 36px;
+    margin: 10px;
+    text-align: center;
+}
+
+.wordpack-description {
+    margin: 10px;
+    text-align: center;
+}
+
+#start-button {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+input[type="checkbox"] {
+    display: none;
+}
+
+input[type="checkbox"] + .checkbox-span {
+    background-color: white;
+    display: inline-block;
+    padding: 12px;
+    border: 1px solid #9B59B6;
+}
+
+input[type="checkbox"]:checked + .checkbox-span {
+    background-color: #9B59B6;
+    color: white;
+}
+
+input[type="checkbox"]:checked + .checkbox-span:after {
+    content: '\2714';
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    color: white
+}
+
+.checkbox-span {
+    display: inline;
+    border-radius: 5px;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.checkbox-wrapper {
+    display: block;
+    position: relative;
+    padding-left: 37px;
+    height: 26;
+    padding-top: 4px;
+    margin: 10px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    cursor: pointer;
 }
