@@ -2,7 +2,7 @@
 
 A web-based multiplayer drawing game.
 
-Live version available [here](draw.dewardt.uk).
+Live version available [here](https://draw.dewardt.uk/).
 
 ### Project Info
 
