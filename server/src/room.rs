@@ -32,26 +32,41 @@ struct Settings {
     pub round_timer: bool,
     pub allow_clear: bool,
     pub enabled_word_packs: Vec<usize>,
+    pub custom_words: Option<WordPack>,
 }
 impl Settings {
     fn parse_from_lines(lines: Vec<String>, max_wordpack_id: usize) -> Option<Settings> {
-        if let [wordpacks, time_limit, canvas_clearing] = &*lines {
-            let wordpacks = wordpacks
-                .split(',')
-                .map(|x| {
-                    if let Ok(id) = x.parse() {
-                        if id < max_wordpack_id {
-                            return Ok(id);
+        if let [wordpacks, time_limit, canvas_clearing, custom_words] = &*lines {
+            let wordpacks = if wordpacks.len() > 0 {
+                wordpacks
+                    .split(',')
+                    .map(|x| {
+                        if let Ok(id) = x.parse() {
+                            if id < max_wordpack_id {
+                                return Ok(id);
+                            }
                         }
-                    }
-                    Err(())
+                        Err(())
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+                    .ok()?
+            } else {
+                vec![]
+            };
+            let custom_words: Option<WordPack> = custom_words
+                .split('|')
+                .map(|x| {
+                    let mut iter = x.split(',').map(|x| x.to_owned());
+                    let word = iter.next()?;
+                    let alternates: Vec<_> = iter.collect();
+                    Some((word, alternates))
                 })
-                .collect::<Result<Vec<_>, _>>()
-                .ok()?;
+                .collect();
             return Some(Settings {
                 enabled_word_packs: wordpacks,
                 round_timer: time_limit == "T",
                 allow_clear: canvas_clearing == "T",
+                custom_words,
             });
         }
         None
@@ -145,7 +160,9 @@ impl Room {
                 if self.excluded_words.len() >= self.max_excluded_words {
                     self.excluded_words.pop_front();
                 }
-                self.excluded_words.push_back(word_index);
+                if self.excluded_words.len() < self.max_excluded_words {
+                    self.excluded_words.push_back(word_index);
+                }
                 let mut acc = 0;
                 for i in &self.settings.enabled_word_packs {
                     if self.word_packs[*i].list_len() + acc > word_index {
@@ -153,16 +170,33 @@ impl Room {
                     }
                     acc += self.word_packs[*i].list_len();
                 }
-                unreachable!("word index was out of bounds");
+                assert!(
+                    self.settings.custom_words.is_some(),
+                    "word_index is out of bounds so custom_words must exist"
+                );
+                assert!(
+                    self.settings.custom_words.as_ref().unwrap().list_len() + acc > word_index,
+                    "word_index was out of bounds of all wordpacks including custom"
+                );
+                return (self.word_packs.len(), word_index - acc);
             }
         }
     }
 
-    fn get_word(&self, word: (usize, usize)) -> &String {
-        self.word_packs[word.0].get_word(word.1)
+    fn get_wordpack(&self, pack: usize) -> &WordPack {
+        if pack == self.word_packs.len() {
+            self.settings.custom_words.as_ref().unwrap()
+        } else {
+            &self.word_packs[pack]
+        }
     }
+
+    fn get_word(&self, word: (usize, usize)) -> &String {
+        self.get_wordpack(word.0).get_word(word.1)
+    }
+
     fn get_alternate(&self, word: (usize, usize), alternate: usize) -> &String {
-        self.word_packs[word.0].get_alternate(word.1, alternate)
+        self.get_wordpack(word.0).get_alternate(word.1, alternate)
     }
 
     pub fn start(&mut self, session_id: usize, lines: Vec<String>, ctx: &mut Context<GameServer>) {
@@ -175,7 +209,12 @@ impl Room {
                         .enumerate()
                         .filter(|(i, _)| settings.enabled_word_packs.contains(&i))
                         .map(|(_, x)| x.list_len())
-                        .sum();
+                        .sum::<usize>()
+                        + settings
+                            .custom_words
+                            .as_ref()
+                            .map(|x| x.list_len())
+                            .unwrap_or(0);
                     if self.num_words == 0 {
                         warn!(
                             "tried to start game with no word packs in room {}",
@@ -189,6 +228,7 @@ impl Room {
                         self.num_words,
                         settings
                     );
+                    self.max_excluded_words = std::cmp::min(100, self.num_words / 10);
                     self.settings = settings;
                     self.new_round(ctx);
                 } else {
@@ -238,7 +278,9 @@ impl Room {
             RoomState::Lobby(LobbyState { host }) => {
                 self.direct_message(&recipient, Event::EnterLobby(host));
             }
-            RoomState::Round(RoundState { leader, timeout, .. }) => {
+            RoomState::Round(RoundState {
+                leader, timeout, ..
+            }) => {
                 self.direct_message(&recipient, Event::NewRound(leader, timeout));
                 self.send_draw_history(session_id, &recipient);
             }
@@ -421,8 +463,9 @@ impl Room {
         if let RoomState::Round(RoundState { word, leader, .. }) = self.state {
             if session_id != leader {
                 self.broadcast_event(Event::Message(session_id, message.clone()));
-                let (matches, alternate) =
-                    self.word_packs[word.0].word_matches(word.1, &message.trim().to_lowercase());
+                let (matches, alternate) = self
+                    .get_wordpack(word.0)
+                    .word_matches(word.1, &message.trim().to_lowercase());
                 if matches {
                     if let Some((_, _, points)) = self.occupants.get_mut(&session_id) {
                         *points += 1;
