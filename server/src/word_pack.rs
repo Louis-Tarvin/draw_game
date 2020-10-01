@@ -1,9 +1,11 @@
 use std::fs::File;
 use std::io::{Read, Result};
+use std::iter::FromIterator;
 use std::path::Path;
 
 use log::{trace, warn};
 
+#[derive(Debug)]
 pub struct WordPack {
     name: String,
     description: String,
@@ -83,6 +85,16 @@ impl WordPack {
             (true, Some(alternate))
         } else {
             (false, None)
+        }
+    }
+}
+
+impl FromIterator<(String, Vec<String>)> for WordPack {
+    fn from_iter<T: IntoIterator<Item = (String, Vec<String>)>>(iter: T) -> Self {
+        WordPack {
+            name: "".to_string(),
+            description: "".to_string(),
+            list: iter.into_iter().collect(),
         }
     }
 }
