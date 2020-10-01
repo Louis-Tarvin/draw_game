@@ -15,7 +15,9 @@ function Wordpack({ toggleSelected, isSelected, name, description, id }) {
 
 function parseCustomWords(inputText) {
     const text = inputText.trim();
-    return text.split('\n').map(s => s.split(',').map(w => w.trim()))
+    return text.split('\n')
+	.map(s => s.split(',').map(w => w.trim()).filter(w => w.length > 0))
+	.filter(w => w.length > 0);
 }
 
 function debounce(cb, timeout) {
@@ -25,7 +27,6 @@ function debounce(cb, timeout) {
                 clearTimeout(timeout_id);
             }
             timeout_id = setTimeout(() => {
-                console.log("event",e);
                 timeout_id = null;
                 cb(e)
             }, timeout);
@@ -46,6 +47,7 @@ export default function Lobby({ socketManager }) {
     const [customWords, setCustomWords] = useState("");
     const [parsedCustomWords, setParsedCustomWords] = useState([]);
     const [parseCallback, setParseCallback] = useState(() => {});
+    const [customWordpackMessage, setCustomWordpackMessage] = useState({});
 
     const onStart = e => {
         e.preventDefault();
@@ -70,16 +72,22 @@ export default function Lobby({ socketManager }) {
     }
 
     useEffect(() => {
-        setCanStart(Object.keys(selectedWordpacks).filter(id => selectedWordpacks[id]).length > 0 || parsedCustomWords.length > 0);
-    }, [selectedWordpacks, setCanStart, parsedCustomWords]);
+        setCanStart(!customWordpackMessage.isError && (Object.keys(selectedWordpacks).filter(id => selectedWordpacks[id]).length > 0 || parsedCustomWords.length > 0));
+    }, [selectedWordpacks, setCanStart, parsedCustomWords, customWordpackMessage]);
 
     useEffect(() => {
         const [debouncedParse, cancelParse] = debounce(target => {
-            setParsedCustomWords(parseCustomWords(target.value));
+	    if (target.value.indexOf('|') !== -1) {
+	    	setCustomWordpackMessage({ isError: true, content: 'Words cannot contain `|`' })
+	    } else {
+		const custom = parseCustomWords(target.value);
+		setCustomWordpackMessage({ content: custom.length + ' custom words loaded' });
+		setParsedCustomWords(custom);
+	    }
         }, 300);
         setParseCallback(() => debouncedParse);
         return cancelParse
-    }, [setParsedCustomWords, setParseCallback]);
+    }, [setParsedCustomWords, setParseCallback, setCustomWordpackMessage]);
 
     return (
         <>
@@ -107,8 +115,18 @@ export default function Lobby({ socketManager }) {
                             )
                         : 'loading'}
                 </div>
-                <div className = "custom-wordpack">
-                    <textarea onChange={customWordsChanged}></textarea>
+                <div className="custom-wordpack">
+		    <h2>Custom words:</h2>
+		    <p>
+			To add your own words, write out the words once per line.
+			If you want to add alternate acceptable words, add a 
+			comma on the same line as the main word followed by the 
+			alternate answer. You can add as many alternates as you want.
+		    </p>
+		    <p className={customWordpackMessage.isError ? 'error' : ''}>
+			{ customWordpackMessage.content }
+		    </p>
+                    <textarea onChange={customWordsChanged} placeholder={'milk\nsun, star\nburger, hamburger, cheeseburger'}></textarea>
                 </div>
                 <input type="submit" value="Start Game" id="start-button" disabled={!wordpacks || !canStart} />
             </form>

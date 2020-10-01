@@ -261,6 +261,23 @@ input[type=range] {
     text-align: center;
 }
 
+.custom-wordpack textarea {
+    width: 100%;
+    height: 200px;
+    outline: none;
+    resize: none;
+    margin: 10px 0;
+    font-family: Inconsolata, sans-serif;
+}
+
+.custom-wordpack p {
+    transition: color 200ms linear;
+}
+
+.custom-wordpack .error {
+    color: #FF7979;
+}
+
 #start-button {
     display: block;
     margin-left: auto;
