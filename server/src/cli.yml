@@ -12,12 +12,12 @@ args:
         short: p
         takes_value: true
         help: |
-            The port for the server defaults to 3007.
-    - word_pack:
+            The port for the server. Defaults to 3007.
+    - word_pack_dir:
         short: w
         takes_value: true
         help: |
-            The path to the word pack, defaults to `words.txt`
+            The path to the word pack directory. Defaults to 'wordpacks'
     - log:
         short: l
         takes_value: true

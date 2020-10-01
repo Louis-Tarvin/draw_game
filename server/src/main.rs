@@ -47,9 +47,9 @@ async fn main() -> std::io::Result<()> {
 
     let serve_dir = matches.value_of("serve_dir").map(|x| x.to_string());
 
-    let word_pack = matches.value_of("word_pack").unwrap_or("wordpacks");
+    let word_pack_dir = matches.value_of("word_pack_dir").unwrap_or("wordpacks");
 
-    let game_server = server::GameServer::new(word_pack).start();
+    let game_server = server::GameServer::new(word_pack_dir).start();
 
     let serve_dir_msg = if let Some(dir) = &serve_dir {
         format!("serving {} at '/'", dir)
