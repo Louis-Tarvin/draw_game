@@ -11,7 +11,7 @@ import {
     userJoinedRoom,
     userLeftRoom,
     winner,
-    timeout
+    timeout,
 } from './action';
 
 export default class SocketManager {
@@ -35,7 +35,10 @@ export default class SocketManager {
         let message = e.data;
         let i;
         if (message[0] === 'd') {
-            let p = message.slice(1).split(',').map(str => parseInt(str));
+            let p = message
+                .slice(1)
+                .split(',')
+                .map(str => parseInt(str));
             if (this.drawHandler) {
                 this.drawHandler.apply(undefined, [false, ...p]);
             } else {
@@ -49,35 +52,37 @@ export default class SocketManager {
             }
         } else if (message[0] === 'c') {
             let id = message.slice(1);
-            this.store.dispatch(socketConnected(id))
+            this.store.dispatch(socketConnected(id));
         } else if (message[0] === 'm') {
             message = message.slice(1).split(',');
             this.store.dispatch(chatMessage(message[0], message[1]));
         } else if (message[0] === 'l') {
             let canvasClearing = message[1] === 'T';
             let parts = message.slice(2).split(',');
-            this.store.dispatch(becomeLeader(canvasClearing, parts[0], parts[1]));
-            if(this.newRoundHandler)
-                this.newRoundHandler();
+            this.store.dispatch(
+                becomeLeader(canvasClearing, parts[0], parts[1])
+            );
+            if (this.newRoundHandler) this.newRoundHandler();
         } else if (message[0] === 'r') {
             let parts = message.slice(1).split(',');
             this.store.dispatch(becomeGuesser(parts[0], parts[1]));
-            if(this.newRoundHandler)
-                this.newRoundHandler();
+            if (this.newRoundHandler) this.newRoundHandler();
         } else if (message[0] === 'e') {
             let parts = message.slice(1).split(',');
             let code = parts.shift();
             let users = {};
-            for (i = 0; i < parts.length; i+= 2) {
+            for (i = 0; i < parts.length; i += 2) {
                 users[parts[i]] = {
-                    username: parts[i+1],
+                    username: parts[i + 1],
                     id: parts[i],
                 };
             }
-            this.store.dispatch(joinedRoom(code, users))
+            this.store.dispatch(joinedRoom(code, users));
         } else if (message[0] === 'j') {
             let userJoinParts = message.slice(1).split(',');
-            this.store.dispatch(userJoinedRoom(userJoinParts[0], userJoinParts[1]));
+            this.store.dispatch(
+                userJoinedRoom(userJoinParts[0], userJoinParts[1])
+            );
         } else if (message[0] === 'g') {
             let userID = message.slice(1);
             this.store.dispatch(userLeftRoom(userID));
@@ -101,7 +106,11 @@ export default class SocketManager {
                 let wordpackID = wordpack[0];
                 let wordpackName = wordpack[1];
                 let wordpackDescription = wordpack.slice(2).join(',');
-                wordpacks.push({ id: wordpackID, name: wordpackName, description: wordpackDescription });
+                wordpacks.push({
+                    id: wordpackID,
+                    name: wordpackName,
+                    description: wordpackDescription,
+                });
             }
             this.store.dispatch(receiveSettingsData(wordpacks));
         } else if (message[0] === 'f') {
@@ -119,12 +128,12 @@ export default class SocketManager {
         this.store.dispatch(socketDisconnected());
         setTimeout(() => {
             this.connect();
-        }, 5000)
+        }, 5000);
     }
 
     setDrawHandler(callback) {
         if (callback) {
-            for (var i = 0; i < this.drawBuffer.length; i ++) {
+            for (var i = 0; i < this.drawBuffer.length; i++) {
                 callback.apply(undefined, this.drawBuffer[i]);
             }
             this.drawBuffer = [];
@@ -165,6 +174,14 @@ export default class SocketManager {
     }
 
     startGame(selectedWordpackIDs, timeLimit, canvasClearing, customWordPack) {
-        this.socket.send(['s', selectedWordpackIDs.join(','), timeLimit, canvasClearing, customWordPack].join('\n'));
+        this.socket.send(
+            [
+                's',
+                selectedWordpackIDs.join(','),
+                timeLimit,
+                canvasClearing,
+                ' ' + (customWordPack || ''),
+            ].join('\n')
+        );
     }
 }

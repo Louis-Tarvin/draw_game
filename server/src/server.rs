@@ -112,7 +112,9 @@ impl GameServer {
             let _ = recipient.do_send(Event::NonExistantRoom(key.to_string()));
             trace!(
                 "User {} ({}) tried to join non-existant room {}",
-                username, session_id, key
+                username,
+                session_id,
+                key
             );
         }
     }
@@ -136,7 +138,13 @@ impl GameServer {
         }
     }
 
-    fn start_room(&mut self, key: &str, session_id: usize, lines: Vec<String>, ctx: &mut Context<GameServer>) {
+    fn start_room(
+        &mut self,
+        key: &str,
+        session_id: usize,
+        lines: Vec<String>,
+        ctx: &mut Context<GameServer>,
+    ) {
         if let Some(room) = self.rooms.get_mut(key) {
             room.start(session_id, lines, ctx);
         } else {
@@ -270,7 +278,8 @@ impl Handler<ClientMessage> for GameServer {
                 self.leave_room(&room_key, msg.session_id, ctx);
             }
             (Some(room_key), 's') => {
-                let lines: Vec<String> = msg.content.lines().skip(1).map(|x| x.to_string()).collect();
+                let lines: Vec<String> =
+                    msg.content.lines().skip(1).map(|x| x.to_string()).collect();
                 self.start_room(&room_key, msg.session_id, lines, ctx);
             }
             (Some(room_key), 'c') => {

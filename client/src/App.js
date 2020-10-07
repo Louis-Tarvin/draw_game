@@ -9,11 +9,17 @@ import Room from './room/Room';
 
 function App({ socketManager }) {
     const inRoom = !!useSelector(state => state.room);
-    const disconnected = useSelector(state => state.socketState === 'disconnected');
+    const disconnected = useSelector(
+        state => state.socketState === 'disconnected'
+    );
 
-    const connectionBar = disconnected? (<div className="connection-bar">There seems to be a connection issue...</div>): null;
+    const connectionBar = disconnected ? (
+        <div className="connection-bar">
+            There seems to be a connection issue...
+        </div>
+    ) : null;
 
-    const view = inRoom? (<Room socketManager={socketManager} />): null;
+    const view = inRoom ? <Room socketManager={socketManager} /> : null;
 
     return (
         <div className="App">
