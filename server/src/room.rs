@@ -56,7 +56,14 @@ impl Settings {
             let custom_words: Option<WordPack> = custom_words
                 .split('|')
                 .map(|x| {
-                    let mut iter = x.split(',').map(|x| x.to_owned());
+                    let mut iter = x.split(',').filter_map(|x| {
+                        if x.trim().len() > 0 {
+                            Some(x.trim().to_string())
+                        } else {
+                            None
+                        }
+                    });
+
                     let word = iter.next()?;
                     let alternates: Vec<_> = iter.collect();
                     Some((word, alternates))
