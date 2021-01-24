@@ -100,6 +100,7 @@ pub struct Room {
     draw_history: Vec<(u32, u32, u32, u32, u32)>,
     round_id: usize,
 }
+
 impl Room {
     pub fn new(
         key: String,

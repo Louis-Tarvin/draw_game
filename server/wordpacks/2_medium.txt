@@ -6,7 +6,6 @@ child
 sibling
 pea
 pacman, pac man
-toilet
 iceberg
 egg
 fried egg
@@ -25,8 +24,6 @@ australia
 india
 handle
 candle
-fork handle
-four candles
 skiing
 brain
 poison
@@ -38,7 +35,7 @@ honey
 smoke
 swordfish
 party
-donut, doughnut
+doughnut, donut, dought nut
 gun
 deer
 stop sign
@@ -48,7 +45,7 @@ top hat
 tie
 delivery
 valve
-rollercoaster
+rollercoaster, roller coaster
 hiking
 superhero, super hero
 clown
@@ -113,7 +110,24 @@ director
 slide
 mail
 email
-Advert, Ad, Advertisement
+advert, ad, advertisement
 radar
 surf
 war
+underground, under ground
+under
+over
+volume
+wifi
+music
+brick, bricks
+bubble
+sports
+metal
+cable
+viking
+date
+bracelet
+necklace
+gamer
+bath

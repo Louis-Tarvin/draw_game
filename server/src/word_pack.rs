@@ -5,6 +5,8 @@ use std::path::Path;
 
 use log::{trace, warn};
 
+use std::collections::HashSet;
+
 #[derive(Debug)]
 pub struct WordPack {
     name: String,
@@ -13,7 +15,10 @@ pub struct WordPack {
 }
 
 impl WordPack {
-    pub fn new<P: std::fmt::Debug + AsRef<Path>>(path: &P) -> Result<WordPack> {
+    pub fn new<P: std::fmt::Debug + AsRef<Path>>(
+        path: &P,
+        word_tracker: &mut HashSet<String>,
+    ) -> Result<WordPack> {
         let mut file = File::open(path)?;
 
         let mut contents = String::new();
@@ -38,8 +43,18 @@ impl WordPack {
                 .filter(|part| !part.is_empty());
             if let Some(word) = parts.next() {
                 if list.iter().any(|(main, _)| main == &word) {
-                    warn!("Word pack {:?} contains duplicate entry `{}`", path, word);
+                    warn!(
+                        "Word pack {:?} contains duplicate entry `{}`, not adding again",
+                        path, word
+                    );
                 } else {
+                    if !word_tracker.insert(word.clone()) {
+                        warn!(
+                            "Word pack {:?} contains duplicate entry `{}` from another word pack (still adding)",
+                            path, word
+                        );
+                    }
+
                     list.push((word, parts.collect()));
                 }
             } else {
@@ -103,6 +118,7 @@ pub fn load_word_packs<P: std::fmt::Debug + AsRef<std::path::Path>>(
     word_pack_path: P,
 ) -> std::io::Result<Vec<WordPack>> {
     use std::fs;
+    let mut tracker = std::collections::HashSet::new();
     trace!("loading wordpacks in directory `{:?}`", word_pack_path);
     let mut word_packs = Vec::new();
     let mut paths: Vec<_> = fs::read_dir(word_pack_path)?
@@ -111,7 +127,7 @@ pub fn load_word_packs<P: std::fmt::Debug + AsRef<std::path::Path>>(
         .collect();
     paths.sort_by_key(|entry| entry.path());
     for entry in paths {
-        let word_pack = WordPack::new(&entry.path())?;
+        let word_pack = WordPack::new(&entry.path(), &mut tracker)?;
         trace!(
             "loaded word pack {} with {} words",
             word_pack.get_name(),

@@ -52,7 +52,6 @@ law
 clone
 hairband, hair band
 science
-wifi
 hatch
 mystery
 fake news
@@ -66,3 +65,29 @@ pressure
 force
 friction
 galaxy, milky way
+knowledge
+power
+teach
+stalactite
+stalagmite
+technology
+ninja
+weapon
+rule
+university
+frequency
+discipline
+play
+emotion
+problem
+neighbour
+jewel
+statistic, statistics
+invisibility, invisible
+deep
+shallow
+equation
+easy
+medium
+hard
+impossible

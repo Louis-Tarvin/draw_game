@@ -52,7 +52,29 @@ eye, eyeball
 shark
 fish
 key
-table
 burger, hamburger, cheeseburger
 tap
 kettle
+box
+football
+tank
+airplane
+leaf
+bag
+bed
+shirt
+trousers
+horse
+moon
+rain
+nose
+eat, eating
+chair
+table, desk
+pencil
+toilet
+shower
+boat
+door
+pan
+rugby
